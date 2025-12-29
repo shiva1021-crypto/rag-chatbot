@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - RAG Bot</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f7f6; }
+        .card { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 350px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+        button { width: 100%; padding: 10px; background: #4a90e2; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #357abd; }
+        .toggle { margin-top: 15px; font-size: 0.9rem; color: #666; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 id="title">Login</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="handleSubmit()" id="btn">Sign In</button>
+        <div class="toggle" onclick="toggleMode()" id="toggleText">Need an account? Sign Up</div>
+        <p id="msg" style="color: red; margin-top: 10px; font-size: 0.9rem;"></p>
+    </div>
+
+    <script>
+        let isSignup = false;
+
+        function toggleMode() {
+            isSignup = !isSignup;
+            document.getElementById('title').innerText = isSignup ? "Sign Up" : "Login";
+            document.getElementById('btn').innerText = isSignup ? "Create Account" : "Sign In";
+            document.getElementById('toggleText').innerText = isSignup ? "Have an account? Login" : "Need an account? Sign Up";
+        }
+
+        async function handleSubmit() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const endpoint = isSignup ? '/auth/signup' : '/auth/login';
+
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+            
+            if (res.ok) {
+                if (!isSignup) window.location.href = data.redirect; // Redirect on login
+                else {
+                    alert("Account created! Please check your email to confirm, then log in.");
+                    toggleMode(); // Switch back to login view
+                }
+            } else {
+                document.getElementById('msg').innerText = data.error;
+            }
+        }
+    </script>
+</body>
+</html>

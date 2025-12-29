@@ -1,0 +1,13 @@
+# Secrets (NEVER upload these)
+.env
+
+# Python System Files
+venv/
+__pycache__/
+*.pyc
+
+# Temporary Uploads
+temp_uploads/
+
+# OS Files
+.DS_Store

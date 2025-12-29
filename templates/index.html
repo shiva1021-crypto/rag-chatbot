@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Knowledge Bot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --bg-color: #f4f7f6;
+            --chat-bg: #ffffff;
+            --sidebar-width: 250px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body { display: flex; height: 100vh; background-color: var(--bg-color); }
+
+        /* --- Sidebar Navigation --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .logo { font-size: 1.5rem; font-weight: bold; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+        .nav-item {
+            padding: 15px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nav-item:hover, .nav-item.active { background-color: var(--primary-color); }
+
+        /* --- Main Content Area --- */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Section: Home / Upload --- */
+        .section { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .section.active { display: block; }
+
+        .hero-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .upload-zone {
+            border: 2px dashed #cbd5e0;
+            border-radius: 10px;
+            padding: 40px;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .upload-zone:hover { border-color: var(--primary-color); background-color: #f8fbff; }
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 15px;
+        }
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        /* --- Section: Chat Interface --- */
+        .chat-container {
+            background: var(--chat-bg);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            height: 85vh;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .message { max-width: 80%; padding: 12px 18px; border-radius: 15px; line-height: 1.6; font-size: 0.95rem; }
+        .user-msg { align-self: flex-end; background-color: var(--primary-color); color: white; border-bottom-right-radius: 2px; }
+        .bot-msg { align-self: flex-start; background-color: #f1f0f0; color: #333; border-bottom-left-radius: 2px; }
+        
+        /* Markdown Styling inside Bot Messages */
+        .bot-msg ul, .bot-msg ol { margin-left: 20px; margin-top: 5px; margin-bottom: 5px; }
+        .bot-msg strong { color: #2c3e50; font-weight: 700; }
+        .bot-msg pre { 
+            background: #2d2d2d; 
+            color: #f8f8f2; 
+            padding: 10px; 
+            border-radius: 5px; 
+            overflow-x: auto; 
+            margin-top: 10px;
+            font-family: 'Consolas', monospace;
+        }
+        .bot-msg code {
+            background: #e0e0e0;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+        
+        .chat-input-area {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+        .status-success { background-color: #d4edda; color: #155724; }
+        .status-error { background-color: #f8d7da; color: #721c24; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo"><i class="fas fa-brain"></i> RAG Chatbot</div>
+        <div class="nav-item active" onclick="showSection('home')">
+            <i class="fas fa-home"></i> Home & Upload
+        </div>
+        <div class="nav-item" onclick="showSection('chat')">
+            <i class="fas fa-comments"></i> Chat Interface
+        </div>
+    </div>
+
+    <div class="main-content">
+        
+        <div id="home" class="section active">
+            <div class="hero-card">
+                <h1>Project Assistant</h1>
+                <p style="color: #666; margin-top: 10px;">Upload your reports, research papers, or specifications to get grounded answers.</p>
+                
+                <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: #cbd5e0;"></i>
+                    <p style="margin-top: 15px;">Click to upload PDF</p>
+                    <input type="file" id="fileInput" hidden onchange="handleFileSelect(this)">
+                </div>
+                
+                <div id="uploadStatus"></div>
+            </div>
+        </div>
+
+        <div id="chat" class="section">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div>
+                        <i class="fas fa-robot" style="margin-right: 10px; color: var(--primary-color);"></i> 
+                        Assistant (Connected to Knowledge Base)
+                    </div>
+                    <button onclick="clearChat()" style="background:none; border:none; color:#999; cursor:pointer; font-size:0.9rem;">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+                <div class="chat-messages" id="chatBox">
+                    <div class="message bot-msg">Hello! I'm ready to answer questions based on your uploaded documents.</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" id="userInput" placeholder="Ask a question about your project..." onkeypress="handleEnter(event)">
+                    <button class="btn" onclick="sendMessage()" style="margin-top: 0; border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Navigation Logic
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Highlight sidebar item
+            if(sectionId === 'home') document.querySelectorAll('.nav-item')[0].classList.add('active');
+            if(sectionId === 'chat') document.querySelectorAll('.nav-item')[1].classList.add('active');
+        }
+
+        // --- NEW: Load History on Startup ---
+        async function loadHistory() {
+            try {
+                const response = await fetch('/get_history');
+                const data = await response.json();
+                
+                if (data.history && data.history.length > 0) {
+                    const chatBox = document.getElementById('chatBox');
+                    // Clear default greeting if history exists
+                    chatBox.innerHTML = ''; 
+                    
+                    data.history.forEach(msg => {
+                        const cssClass = (msg.role === 'user') ? 'user-msg' : 'bot-msg';
+                        // formatting: if bot, parse markdown; if user, plain text
+                        const content = (msg.role === 'bot') ? marked.parse(msg.message) : msg.message;
+                        
+                        chatBox.innerHTML += `<div class="message ${cssClass}">${content}</div>`;
+                    });
+                    
+                    // Scroll to bottom
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            } catch (error) {
+                console.error("Failed to load history:", error);
+            }
+        }
+
+        // Call this when page loads
+        window.onload = loadHistory;
+
+        // File Upload Logic
+        async function handleFileSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.innerHTML = `<div class="status-badge" style="background:#e2e3e5; color:#383d41">Processing ${file.name}...</div>`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload', { method: 'POST', body: formData });
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="status-badge status-success"><i class="fas fa-check"></i> Success! Swapping to chat...</div>`;
+                    setTimeout(() => showSection('chat'), 1500); 
+                    // NOTE: Removed clearChat() here to stop deleting data on upload
+                } else {
+                    statusDiv.innerHTML = `<div class="status-badge status-error">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status-badge status-error">Connection Failed</div>`;
+            }
+        }
+
+        // Chat Logic
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const chatBox = document.getElementById('chatBox');
+            const text = input.value.trim();
+            
+            if (!text) return;
+
+            // 1. Add User Message
+            chatBox.innerHTML += `<div class="message user-msg">${text}</div>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 2. Add Loading Bubble
+            const loadingId = 'loading-' + Date.now();
+            chatBox.innerHTML += `<div class="message bot-msg" id="${loadingId}"><i class="fas fa-spinner fa-spin"></i> Thinking...</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // 3. API Call
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: text })
+                });
+                const result = await response.json();
+
+                // 4. Update Bot Message with MARKDOWN PARSING
+                const loadingBubble = document.getElementById(loadingId);
+                
+                // Use marked.parse() to convert markdown to HTML
+                loadingBubble.innerHTML = marked.parse(result.response);
+                
+                // Re-scroll to bottom after response
+                chatBox.scrollTop = chatBox.scrollHeight;
+                
+            } catch (error) {
+                document.getElementById(loadingId).innerHTML = "Sorry, I encountered an error connecting to the server.";
+            }
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        async function clearChat() {
+            if(!confirm("⚠️ WARNING: This will permanently delete your chat history and uploaded documents from the database to free up space.\n\nAre you sure?")) {
+                return;
+            }
+
+            const chatBox = document.getElementById('chatBox');
+            // Show loading state
+            chatBox.innerHTML = `<div class="message bot-msg"><i class="fas fa-spinner fa-spin"></i> Clearing database storage...</div>`;
+
+            try {
+                const response = await fetch('/clear_data', { method: 'DELETE' });
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Reset UI
+                    chatBox.innerHTML = `<div class="message bot-msg">Storage cleared! Memory is fresh. Please upload a new document to start.</div>`;
+                } else {
+                    chatBox.innerHTML += `<div class="message bot-msg" style="color:red">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                console.error(error);
+                chatBox.innerHTML += `<div class="message bot-msg" style="color:red">Connection failed.</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
