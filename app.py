@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify, render_template, session, redirect, u
 from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter 
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from groq import Groq
 from supabase import create_client, Client
 
@@ -26,8 +26,8 @@ supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(supabase_url, supabase_key)
 
-# 3. Embeddings
-embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# 3. Embeddings (Lightweight for Free Tier)
+embedding_model = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 
 # --- Routes ---
 # --- Add this to your app.py (anywhere before if __name__ == '__main__':) ---
