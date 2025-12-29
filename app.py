@@ -30,6 +30,19 @@ supabase: Client = create_client(supabase_url, supabase_key)
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 # --- Routes ---
+# --- Add this to your app.py (anywhere before if __name__ == '__main__':) ---
+
+@app.route('/get_user_info', methods=['GET'])
+def get_user_info():
+    if 'user_id' not in session: return jsonify({"error": "Unauthorized"}), 401
+    
+    # In a real app, you might query a 'profiles' table here.
+    # For now, we return the session data we already have.
+    return jsonify({
+        "email": session.get('email'),
+        "user_id": session.get('user_id'),
+        "initial": session.get('email')[0].upper() if session.get('email') else "?"
+    })
 
 @app.route('/')
 def index():
@@ -98,9 +111,11 @@ def upload_file():
         embeddings = embedding_model.embed_documents(texts)
 
         # 3. Prepare Data for Insert
+        # 3. Prepare Data for Insert
         records = []
         for i, chunk in enumerate(chunks):
             records.append({
+                "user_id": user_id,  # <--- ADD THIS LINE!
                 "content": chunk.page_content,
                 "metadata": {"user_id": user_id, "filename": file.filename},
                 "embedding": embeddings[i]

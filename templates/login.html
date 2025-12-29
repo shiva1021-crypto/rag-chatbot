@@ -2,24 +2,199 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login - RAG Bot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - AI Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f7f6; }
-        .card { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 350px; text-align: center; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
-        button { width: 100%; padding: 10px; background: #4a90e2; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:hover { background: #357abd; }
-        .toggle { margin-top: 15px; font-size: 0.9rem; color: #666; cursor: pointer; text-decoration: underline; }
+        :root {
+            --primary-color: #0b57d0; /* Gemini Blue */
+            --primary-hover: #0842a0;
+            --bg-color: #f0f4f9;      /* Light gray-blue background */
+            --text-color: #1f1f1f;
+            --subtext-color: #444746;
+            --error-color: #d93025;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        /* --- Card Design --- */
+        .auth-card {
+            background: white;
+            padding: 48px;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 28px; /* High rounding for modern look */
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06); /* Soft, diffuse shadow */
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .logo-area {
+            margin-bottom: 24px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--subtext-color);
+            background: #f1f3f4;
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+        
+        .logo-icon { color: var(--primary-color); }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+
+        p.subtitle {
+            color: var(--subtext-color);
+            font-size: 0.95rem;
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        /* --- Floating Input Fields --- */
+        .input-group {
+            position: relative;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 16px 16px;
+            border: 1.5px solid #747775;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: transparent;
+            color: var(--text-color);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 1px var(--primary-color);
+        }
+
+        /* The "Floating" Label */
+        .input-group label {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: white;
+            padding: 0 4px;
+            color: #747775;
+            font-size: 1rem;
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+
+        /* Move label up when focused or has text */
+        .input-group input:focus + label,
+        .input-group input:not(:placeholder-shown) + label {
+            top: 0;
+            font-size: 0.75rem;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* --- Buttons --- */
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50px; /* Pill shape */
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            margin-top: 8px;
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        /* --- Footer & Links --- */
+        .footer-text {
+            margin-top: 32px;
+            font-size: 0.9rem;
+            color: var(--subtext-color);
+        }
+
+        .link-btn {
+            color: var(--primary-color);
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            margin-left: 5px;
+        }
+        .link-btn:hover { text-decoration: underline; }
+
+        .error-msg {
+            color: var(--error-color);
+            background: #fce8e6;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-top: 20px;
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2 id="title">Login</h2>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="handleSubmit()" id="btn">Sign In</button>
-        <div class="toggle" onclick="toggleMode()" id="toggleText">Need an account? Sign Up</div>
-        <p id="msg" style="color: red; margin-top: 10px; font-size: 0.9rem;"></p>
+
+    <div class="auth-card">
+        <div class="logo-area">
+            <i class="fas fa-sparkles logo-icon"></i> AI Assistant
+        </div>
+
+        <h1 id="title">Sign in</h1>
+        <p class="subtitle" id="subtitle">Welcome back. Please enter your details.</p>
+
+        <div class="input-group">
+            <input type="email" id="email" placeholder=" " required autocomplete="off">
+            <label for="email">Email Address</label>
+        </div>
+
+        <div class="input-group">
+            <input type="password" id="password" placeholder=" " required onkeypress="handleEnter(event)">
+            <label for="password">Password</label>
+        </div>
+
+        <button class="btn-primary" onclick="handleSubmit()" id="submitBtn">Sign In</button>
+        
+        <p class="error-msg" id="errorMsg"></p>
+
+        <div class="footer-text">
+            <span id="footerText">Don't have an account?</span>
+            <span class="link-btn" onclick="toggleMode()" id="toggleBtn">Sign up</span>
+        </div>
     </div>
 
     <script>
@@ -27,33 +202,98 @@
 
         function toggleMode() {
             isSignup = !isSignup;
-            document.getElementById('title').innerText = isSignup ? "Sign Up" : "Login";
-            document.getElementById('btn').innerText = isSignup ? "Create Account" : "Sign In";
-            document.getElementById('toggleText').innerText = isSignup ? "Have an account? Login" : "Need an account? Sign Up";
+            const title = document.getElementById('title');
+            const subtitle = document.getElementById('subtitle');
+            const btn = document.getElementById('submitBtn');
+            const footerText = document.getElementById('footerText');
+            const toggleBtn = document.getElementById('toggleBtn');
+            const errorMsg = document.getElementById('errorMsg');
+
+            // Reset UI for the new mode
+            errorMsg.style.display = 'none';
+            document.getElementById('password').value = '';
+
+            if (isSignup) {
+                title.innerText = "Create Account";
+                subtitle.innerText = "Get started with your personal AI assistant.";
+                btn.innerText = "Create Account";
+                footerText.innerText = "Already have an account?";
+                toggleBtn.innerText = "Sign in";
+            } else {
+                title.innerText = "Sign in";
+                subtitle.innerText = "Welcome back. Please enter your details.";
+                btn.innerText = "Sign In";
+                footerText.innerText = "Don't have an account?";
+                toggleBtn.innerText = "Sign up";
+            }
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') handleSubmit();
         }
 
         async function handleSubmit() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const btn = document.getElementById('submitBtn');
+            const errorMsg = document.getElementById('errorMsg');
+
+            // Basic Validation
+            if(!email || !password) {
+                showError("Please fill in all fields.");
+                return;
+            }
+
+            // UI Loading State
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+            errorMsg.style.display = 'none';
+
             const endpoint = isSignup ? '/auth/signup' : '/auth/login';
 
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
 
-            const data = await res.json();
-            
-            if (res.ok) {
-                if (!isSignup) window.location.href = data.redirect; // Redirect on login
-                else {
-                    alert("Account created! Please check your email to confirm, then log in.");
-                    toggleMode(); // Switch back to login view
+                const data = await res.json();
+                
+                if (res.ok) {
+                    if (!isSignup) {
+                        // Success: Redirect to Home
+                        window.location.href = data.redirect || '/';
+                    } else {
+                        // Success: Signup
+                        alert("Account created successfully! Please check your email to confirm.");
+                        toggleMode(); // Switch back to login
+                        btn.innerText = "Sign In";
+                        btn.disabled = false;
+                    }
+                } else {
+                    showError(data.error || "Authentication failed");
                 }
-            } else {
-                document.getElementById('msg').innerText = data.error;
+            } catch (err) {
+                showError("Connection error. Is the server running?");
+            } finally {
+                if(!res.ok) {
+                    btn.innerText = isSignup ? "Create Account" : "Sign In";
+                    btn.disabled = false;
+                }
             }
+        }
+
+        function showError(msg) {
+            const errorMsg = document.getElementById('errorMsg');
+            const btn = document.getElementById('submitBtn');
+            
+            errorMsg.innerText = msg;
+            errorMsg.style.display = 'block';
+            
+            // Reset button
+            btn.innerText = isSignup ? "Create Account" : "Sign In";
+            btn.disabled = false;
         }
     </script>
 </body>
