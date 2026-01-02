@@ -3,421 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Assistant</title>
+    <title>Academic Portal</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <style>
-        :root {
-            --bg-color: #ffffff;
-            --sidebar-bg: #f0f4f9; /* Gemini light sidebar tone */
-            --text-color: #1f1f1f;
-            --primary-color: #0b57d0; /* Gemini Blue */
-            --hover-bg: #e3e3e3;
-            --border-color: #e5e7eb;
-        }
-
+        :root { --primary: #0b57d0; --bg: #f8f9fa; --sidebar: #ffffff; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { display: flex; height: 100vh; background: var(--bg); overflow: hidden; }
+
+        /* --- Layout --- */
+        .sidebar { width: 300px; background: var(--sidebar); border-right: 1px solid #ddd; display: flex; flex-direction: column; padding: 20px; }
+        .main { flex: 1; display: flex; flex-direction: column; position: relative; }
         
-        body { display: flex; height: 100vh; background-color: var(--bg-color); color: var(--text-color); overflow: hidden; }
-
-        /* --- Sidebar (Left Panel) --- */
-        .sidebar {
-            width: 260px;
-            background-color: var(--sidebar-bg);
-            display: flex;
-            flex-direction: column;
-            padding: 20px 10px;
-            border-right: 1px solid transparent;
-            transition: all 0.3s ease;
-        }
+        h2 { font-size: 1.2rem; margin-bottom: 20px; color: #333; display: flex; align-items: center; gap: 10px; }
+        label { font-size: 0.8rem; font-weight: 600; color: #555; margin-top: 15px; display: block; margin-bottom: 5px; }
         
-        .new-chat-btn {
-            background-color: #dde3ea;
-            color: #444746;
-            padding: 12px 15px;
-            border-radius: 15px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-bottom: 20px;
-            transition: background 0.2s;
-        }
-        .new-chat-btn:hover { background-color: #d0d7de; }
+        select, input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px; }
+        button { cursor: pointer; }
 
-        .nav-items { flex: 1; overflow-y: auto; }
-        .nav-item {
-            padding: 10px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            color: #444746;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 5px;
-        }
-        .nav-item:hover { background-color: #e0e5eb; }
-        .nav-item.active { background-color: #c2e7ff; color: #001d35; font-weight: 600; }
-
-        /* --- Main Content Area --- */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            background: #fff;
-        }
-
-        /* Top Bar & Profile */
-        .top-bar {
-            padding: 15px 30px;
-            display: flex;
-            justify-content: flex-end; /* Pushes profile to right */
-            align-items: center;
-        }
-
-        .profile-container { position: relative; }
+        /* --- Teacher Specific --- */
+        .upload-card { background: white; padding: 20px; border-radius: 10px; border: 1px solid #ddd; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .btn-upload { background: #1e8e3e; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 500; }
+        .btn-upload:hover { background: #187032; }
         
-        .profile-icon {
-            width: 40px;
-            height: 40px;
-            background-color: #7c4dff; /* Deep Purple Avatar */
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            cursor: pointer;
-            user-select: none;
-            transition: transform 0.2s;
-        }
-        .profile-icon:hover { transform: scale(1.05); }
+        .file-list { margin-top: 20px; overflow-y: auto; flex: 1; }
+        .file-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .file-icon { color: #d93025; }
 
-        /* Gemini-Style Profile Dropdown */
-        .profile-dropdown {
-            position: absolute;
-            top: 55px;
-            right: 0;
-            width: 280px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            padding: 20px;
-            display: none; /* Hidden by default */
-            z-index: 1000;
-            border: 1px solid #eee;
-            animation: fadeIn 0.2s ease-out;
-        }
-        .profile-dropdown.show { display: block; }
-
-        .dropdown-header { text-align: center; margin-bottom: 15px; }
-        .dropdown-avatar {
-            width: 60px;
-            height: 60px;
-            background-color: #7c4dff;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            margin: 0 auto 10px auto;
-        }
-        .user-email { font-size: 0.95rem; color: #333; font-weight: 500; }
-        .dropdown-actions { border-top: 1px solid #eee; padding-top: 15px; margin-top: 10px; }
-        .dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            border-radius: 10px;
-            cursor: pointer;
-            color: #444;
-            transition: background 0.2s;
-        }
-        .dropdown-item:hover { background-color: #f5f5f5; }
-        .dropdown-item.danger { color: #d93025; }
-        .dropdown-item.danger:hover { background-color: #fce8e6; }
-
-        /* Chat Area */
-        .chat-scroll-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 20%; /* Centered view like ChatGPT */
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .welcome-screen {
-            text-align: center;
-            margin-top: 10vh;
-            color: #c4c7c5;
-        }
-        .welcome-screen h1 {
-            font-size: 3rem;
-            background: linear-gradient(to right, #4285f4, #d96570);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-        }
-
-        .message {
-            line-height: 1.6;
-            font-size: 1rem;
-            padding: 0 10px;
-        }
-        .user-msg { font-weight: 500; color: #1f1f1f; align-self: flex-end; background: #f0f4f9; padding: 10px 20px; border-radius: 20px; max-width: 80%; }
-        .bot-msg { color: #1f1f1f; width: 100%; }
-
-        /* Input Area (Floating Bottom) */
-        .input-container {
-            padding: 20px 20%;
-            padding-bottom: 30px;
-        }
-        .input-box {
-            background: #f0f4f9;
-            border-radius: 30px;
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: background 0.3s;
-        }
-        .input-box:focus-within { background: #e9eef6; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        /* --- Student Specific --- */
+        .chat-area { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; }
+        .message { padding: 15px 20px; border-radius: 12px; line-height: 1.5; max-width: 80%; }
+        .user-msg { background: #e8f0fe; align-self: flex-end; color: #1f1f1f; }
+        .bot-msg { background: white; align-self: flex-start; border: 1px solid #eee; width: 100%; }
         
-        textarea {
-            flex: 1;
-            background: transparent;
-            border: none;
-            resize: none;
-            height: 24px;
-            max-height: 200px;
-            font-size: 1rem;
-            outline: none;
-            color: #1f1f1f;
-        }
-        
-        .action-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #444746;
-            font-size: 1.2rem;
-            padding: 5px;
-            border-radius: 50%;
-            transition: all 0.2s;
-        }
-        .action-btn:hover { background: #d0d7de; }
-        .send-btn { color: var(--primary-color); }
-        
-        /* Markdown Styling */
-        .bot-msg code { background: #f0f4f9; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
-        .bot-msg pre { background: #1e1e1e; color: #fff; padding: 15px; border-radius: 10px; overflow-x: auto; margin: 10px 0; }
+        .input-area { padding: 20px; background: white; border-top: 1px solid #ddd; display: flex; gap: 10px; }
+        textarea { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #ccc; resize: none; height: 50px; }
+        .btn-send { background: var(--primary); color: white; border: none; padding: 0 25px; border-radius: 20px; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Visibility Helpers */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <div class="new-chat-btn" onclick="location.reload()">
-            <i class="fas fa-plus"></i> New Chat
+        <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
+            <h2 id="portalTitle">Portal</h2>
+            <div style="font-size: 0.85rem; color: #666;" id="userEmail">Loading...</div>
+            <button onclick="logout()" style="color: #d93025; background: none; border: none; font-size: 0.8rem; margin-top: 5px; text-decoration: underline;">Sign Out</button>
+        </div>
+
+        <div id="teacherControls" class="hidden">
+            <div class="upload-card">
+                <h3><i class="fas fa-cloud-upload-alt"></i> Upload Syllabus</h3>
+                <label>Subject Name</label>
+                <input type="text" id="t_subject" placeholder="e.g. Thermodynamics">
+                
+                <label>Unit / Module</label>
+                <input type="text" id="t_unit" placeholder="e.g. Unit 1">
+                
+                <label>PDF Document</label>
+                <input type="file" id="t_file" accept=".pdf">
+                
+                <button class="btn-upload" onclick="uploadFile()">Upload File</button>
+                <div id="uploadStatus" style="font-size: 0.8rem; margin-top: 10px; text-align: center;"></div>
+            </div>
+        </div>
+
+        <div id="studentControls" class="hidden">
+            <label>1. Select Subject</label>
+            <select id="s_subject" onchange="loadUnits()">
+                <option value="" disabled selected>-- Choose Subject --</option>
+            </select>
+
+            <label>2. Select Unit</label>
+            <select id="s_unit" onchange="loadFiles()" disabled>
+                <option value="" disabled selected>-- Choose Unit --</option>
+            </select>
+
+            <div style="margin-top: 20px;">
+                <label>📚 Course Materials</label>
+                <div id="fileListDisplay" class="file-list" style="max-height: 200px; background: white; border: 1px solid #eee; border-radius: 6px;">
+                    <div style="padding:10px; color:#999; text-align:center;">Select Unit to view files</div>
+                </div>
+            </div>
         </div>
         
-        <div class="nav-items">
-            <div class="nav-item active">
-                <i class="far fa-comment-alt"></i> Current Project
-            </div>
-            <div class="nav-item" onclick="document.getElementById('fileInput').click()">
-                <i class="fas fa-paperclip"></i> Upload PDF
-                <input type="file" id="fileInput" hidden onchange="handleFileUpload(this)">
-            </div>
-            <div id="uploadStatus" style="font-size: 0.8rem; padding: 10px; color: #666;"></div>
+        <div id="teacherFileList" class="file-list hidden">
+            <h4>Uploaded Library</h4>
+            <div id="libraryList"></div>
         </div>
     </div>
 
-    <div class="main-content">
+    <div class="main">
         
-        <div class="top-bar">
-            <div class="profile-container">
-                <div class="profile-icon" onclick="toggleProfile()" id="profileIcon">U</div>
-                
-                <div class="profile-dropdown" id="profileDropdown">
-                    <div class="dropdown-header">
-                        <div class="dropdown-avatar" id="dropdownAvatar">U</div>
-                        <div class="user-email" id="userEmail">loading...</div>
-                        <div style="font-size: 0.8rem; color: #666;">Free Plan</div>
-                    </div>
-                    <div class="dropdown-actions">
-                        <div class="dropdown-item" onclick="clearData()">
-                            <i class="fas fa-trash-alt"></i> Clear History
-                        </div>
-                        <div class="dropdown-item danger" onclick="window.location.href='/auth/logout'">
-                            <i class="fas fa-sign-out-alt"></i> Sign Out
-                        </div>
-                    </div>
-                </div>
+        <div id="teacherView" class="hidden" style="display: flex; align-items: center; justify-content: center; height: 100%; color: #888;">
+            <div style="text-align: center;">
+                <i class="fas fa-chalkboard-teacher" style="font-size: 4rem; margin-bottom: 20px; color: #ccc;"></i>
+                <h1>Teacher Dashboard</h1>
+                <p>Use the sidebar to upload and manage course content.</p>
             </div>
         </div>
 
-        <div class="chat-scroll-area" id="chatBox">
-            <div class="welcome-screen" id="welcomeScreen">
-                <h1>Hello, Human</h1>
-                <p>How can I help you with your project documentation today?</p>
-            </div>
-        </div>
-
-        <div class="input-container">
-            <div class="input-box">
-                <div class="action-btn" onclick="document.getElementById('fileInput').click()">
-                    <i class="fas fa-plus-circle"></i>
+        <div id="studentView" class="hidden" style="display: flex; flex-direction: column; height: 100%;">
+            <div class="chat-area" id="chatBox">
+                <div style="text-align: center; margin-top: 50px; color: #aaa;">
+                    <h1><i class="fas fa-robot"></i> AI Tutor</h1>
+                    <p>Select a Subject and Unit to start studying.</p>
                 </div>
-                <textarea id="userInput" placeholder="Ask anything about your PDF..." rows="1" oninput="autoResize(this)" onkeypress="handleEnter(event)"></textarea>
-                <button class="action-btn send-btn" onclick="sendMessage()">
+            </div>
+            
+            <div class="input-area">
+                <textarea id="userQuery" placeholder="Ask a question about the selected unit..." disabled></textarea>
+                <button class="btn-send" onclick="sendChat()" id="sendBtn" disabled>
                     <i class="fas fa-paper-plane"></i>
                 </button>
-            </div>
-            <div style="text-align: center; font-size: 0.75rem; color: #888; margin-top: 10px;">
-                AI can make mistakes. Please double check important info.
             </div>
         </div>
 
     </div>
 
     <script>
-        // --- 1. Profile & UI Logic ---
-        
-        // Auto-fetch user info on load
+        let libraryData = {}; // Stores { "Physics": { "Unit 1": ["file1.pdf"] } }
+
         window.onload = async function() {
-            try {
-                const res = await fetch('/get_user_info');
-                if(res.ok) {
-                    const data = await res.json();
-                    document.getElementById('profileIcon').innerText = data.initial;
-                    document.getElementById('dropdownAvatar').innerText = data.initial;
-                    document.getElementById('userEmail').innerText = data.email;
-                }
-                loadHistory(); // Also load chat history
-            } catch(e) { console.error("Auth check failed", e); }
+            // 1. Identify User
+            const role = localStorage.getItem('user_role');
+            const email = "User"; // You can fetch real email from API if needed
+            document.getElementById('portalTitle').innerHTML = role === 'admin' ? 
+                '<i class="fas fa-chalkboard-teacher"></i> Teacher Portal' : 
+                '<i class="fas fa-user-graduate"></i> Student Portal';
+            
+            // 2. Fetch Library Data (Subjects/Units/Files)
+            await fetchLibrary();
+
+            // 3. Toggle Interfaces
+            if (role === 'admin') {
+                // Teacher view
+                document.getElementById('teacherControls').classList.remove('hidden');
+                document.getElementById('teacherFileList').classList.remove('hidden');
+    
+                document.getElementById('teacherView').classList.remove('hidden'); // Remove class first
+                document.getElementById('teacherView').style.display = 'flex';
+            } else {
+                document.getElementById('studentControls').classList.remove('hidden');
+    
+                document.getElementById('studentView').classList.remove('hidden'); // <--- FIX ADDED
+                document.getElementById('studentView').style.display = 'flex';
+                populateStudentSubjects();
+            }
         };
 
-        function toggleProfile() {
-            const dropdown = document.getElementById('profileDropdown');
-            dropdown.classList.toggle('show');
-        }
-
-        // Close dropdown if clicking outside
-        document.addEventListener('click', function(event) {
-            const container = document.querySelector('.profile-container');
-            if (!container.contains(event.target)) {
-                document.getElementById('profileDropdown').classList.remove('show');
-            }
-        });
-
-        function autoResize(textarea) {
-            textarea.style.height = 'auto'; 
-            textarea.style.height = textarea.scrollHeight + 'px';
-        }
-
-        // --- 2. Chat Logic (Same as before, just adapted for new UI) ---
-
-        async function loadHistory() {
+        // --- SHARED FUNCTIONS ---
+        async function fetchLibrary() {
             try {
-                const response = await fetch('/get_history');
-                const data = await response.json();
+                const res = await fetch('/get_library');
+                libraryData = await res.json();
                 
-                if (data.history && data.history.length > 0) {
-                    document.getElementById('welcomeScreen').style.display = 'none'; // Hide welcome msg
-                    const chatBox = document.getElementById('chatBox');
-                    
-                    data.history.forEach(msg => {
-                        const div = document.createElement('div');
-                        if (msg.role === 'user') {
-                            div.className = 'message user-msg';
-                            div.textContent = msg.message;
-                        } else {
-                            div.className = 'message bot-msg';
-                            div.innerHTML = marked.parse(msg.message);
-                        }
-                        chatBox.appendChild(div);
-                    });
-                    chatBox.scrollTop = chatBox.scrollHeight;
-                }
-            } catch (error) { console.error("History error", error); }
+                if(localStorage.getItem('user_role') === 'admin') renderTeacherLibrary();
+            } catch(e) { console.error("Library load failed", e); }
         }
 
-        async function sendMessage() {
-            const input = document.getElementById('userInput');
-            const text = input.value.trim();
-            if (!text) return;
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/auth/logout';
+        }
+
+        // --- TEACHER LOGIC ---
+        async function uploadFile() {
+            const subject = document.getElementById('t_subject').value.trim();
+            const unit = document.getElementById('t_unit').value.trim();
+            const file = document.getElementById('t_file').files[0];
+            const status = document.getElementById('uploadStatus');
+
+            if(!subject || !unit || !file) {
+                alert("Please fill all fields."); return;
+            }
+
+            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('subject', subject);
+            formData.append('unit', unit);
+
+            try {
+                const res = await fetch('/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                if(res.ok) {
+                    status.innerHTML = '<span style="color:green">Success!</span>';
+                    document.getElementById('t_file').value = ''; // Clear file input
+                    await fetchLibrary(); // Refresh list
+                } else {
+                    status.innerText = "Error: " + (data.error || "Failed");
+                }
+            } catch(e) { status.innerText = "Upload failed."; }
+        }
+
+        function renderTeacherLibrary() {
+            const list = document.getElementById('libraryList');
+            list.innerHTML = "";
+            for (const [subj, units] of Object.entries(libraryData)) {
+                for (const [unit, files] of Object.entries(units)) {
+                    files.forEach(f => {
+                        list.innerHTML += `
+                        <div class="file-item">
+                            <i class="fas fa-file-pdf file-icon"></i>
+                            <div>
+                                <strong>${subj}</strong> - ${unit}<br>
+                                <span style="font-size:0.8em; color:#666;">${f}</span>
+                            </div>
+                        </div>`;
+                    });
+                }
+            }
+        }
+
+        // --- STUDENT LOGIC ---
+        function populateStudentSubjects() {
+            const sel = document.getElementById('s_subject');
+            sel.innerHTML = '<option value="" disabled selected>-- Choose Subject --</option>';
+            Object.keys(libraryData).forEach(s => {
+                sel.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+        }
+
+        function loadUnits() {
+            const subj = document.getElementById('s_subject').value;
+            const unitSel = document.getElementById('s_unit');
+            unitSel.innerHTML = '<option value="" disabled selected>-- Choose Unit --</option>';
+            unitSel.disabled = false;
+
+            if (libraryData[subj]) {
+                Object.keys(libraryData[subj]).forEach(u => {
+                    unitSel.innerHTML += `<option value="${u}">${u}</option>`;
+                });
+            }
+        }
+
+        function loadFiles() {
+            const subj = document.getElementById('s_subject').value;
+            const unit = document.getElementById('s_unit').value;
+            const display = document.getElementById('fileListDisplay');
+            
+            // Enable Chat
+            document.getElementById('userQuery').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('userQuery').placeholder = `Chatting about ${subj} (${unit})...`;
+
+            // Show Files
+            display.innerHTML = "";
+            const files = libraryData[subj]?.[unit] || [];
+            if(files.length === 0) {
+                display.innerHTML = "<div style='padding:10px;'>No files found.</div>";
+            } else {
+                files.forEach(f => {
+                    display.innerHTML += `
+                    <div class="file-item">
+                        <i class="fas fa-file-pdf file-icon"></i> ${f}
+                    </div>`;
+                });
+            }
+            
+            // Reset Chat
+            document.getElementById('chatBox').innerHTML = `
+                <div style="text-align: center; margin-top: 20px; color: #666;">
+                    <h3>Studying: ${unit}</h3>
+                    <p>Ask any question from the uploaded files.</p>
+                </div>`;
+        }
+
+        async function sendChat() {
+            const query = document.getElementById('userQuery').value.trim();
+            const subject = document.getElementById('s_subject').value;
+            const unit = document.getElementById('s_unit').value;
+            if(!query) return;
 
             const chatBox = document.getElementById('chatBox');
-            document.getElementById('welcomeScreen').style.display = 'none';
+            chatBox.innerHTML += `<div class="message user-msg">${query}</div>`;
+            document.getElementById('userQuery').value = '';
 
-            // User Msg
-            chatBox.innerHTML += `<div class="message user-msg">${text}</div>`;
-            input.value = '';
-            input.style.height = '24px'; // Reset height
-
-            // Loading
-            const loadingId = 'loading-' + Date.now();
-            chatBox.innerHTML += `<div class="message bot-msg" id="${loadingId}"><i class="fas fa-spinner fa-spin"></i> Thinking...</div>`;
+            const loading = document.createElement('div');
+            loading.className = 'message bot-msg';
+            loading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing notes...';
+            chatBox.appendChild(loading);
             chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
-                const response = await fetch('/chat', {
+                const res = await fetch('/chat', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: text })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ query, subject, unit })
                 });
-                const result = await response.json();
-                
-                const loadingDiv = document.getElementById(loadingId);
-                loadingDiv.innerHTML = marked.parse(result.response);
-                
-            } catch (error) {
-                document.getElementById(loadingId).innerText = "Error connecting to server.";
-            }
-        }
-
-        function handleEnter(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        }
-
-        async function handleFileUpload(input) {
-            const file = input.files[0];
-            if (!file) return;
-            
-            const status = document.getElementById('uploadStatus');
-            status.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Uploading ${file.name}...`;
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const res = await fetch('/upload', { method: 'POST', body: formData });
-            if (res.ok) {
-                status.innerHTML = `<i class="fas fa-check" style="color:green"></i> Uploaded!`;
-                setTimeout(() => status.innerHTML = '', 3000);
-            } else {
-                status.innerHTML = `<span style="color:red">Upload Failed</span>`;
-            }
-        }
-        
-        async function clearData() {
-            if(confirm("Clear all history?")) {
-                await fetch('/clear_data', { method: 'DELETE' });
-                location.reload();
-            }
+                const data = await res.json();
+                loading.innerHTML = marked.parse(data.response || data.error);
+            } catch(e) { loading.innerText = "Error connecting to tutor."; }
         }
     </script>
 </body>
