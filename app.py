@@ -171,15 +171,19 @@ def upload_file():
     file.save(filepath)
 
     try:
-        # --- NEW STEP: Smart Clean-Up (Enables Re-uploading) ---
-        # Before adding, we delete any existing entries for this exact Filename+Subject+Unit.
-        # This prevents duplicate answers if the teacher updates a file.
-        supabase.table("documents").delete() \
+        # --- FIX STARTS HERE: Two-Step Clean Up ---
+        # Step 1: Find IDs of existing chunks for this file (Select is safer than Delete for JSON filters)
+        existing_docs = supabase.table("documents").select("id") \
             .filter("metadata->>subject", "eq", subject) \
             .filter("metadata->>unit", "eq", unit) \
             .filter("metadata->>filename", "eq", file.filename) \
             .execute()
-        # -------------------------------------------------------
+        
+        # Step 2: If duplicates exist, delete them by ID (Standard delete, no complex filters)
+        if existing_docs.data:
+            ids_to_delete = [doc['id'] for doc in existing_docs.data]
+            supabase.table("documents").delete().in_("id", ids_to_delete).execute()
+        # --- FIX ENDS HERE -----------------------
 
         loader = PyPDFLoader(filepath)
         documents = loader.load()
@@ -194,6 +198,9 @@ def upload_file():
         user_id = session.get('user_id') 
 
         for i, chunk in enumerate(chunks):
+            # Extract page number (default to 1 if missing)
+            page_number = chunk.metadata.get('page', 0) + 1
+            
             records.append({
                 "user_id": user_id, 
                 "content": chunk.page_content,
@@ -202,7 +209,8 @@ def upload_file():
                     "unit": unit,
                     "filename": file.filename,
                     "type": "syllabus",
-                    "uploaded_by": user_id 
+                    "uploaded_by": user_id,
+                    "page": page_number
                 },
                 "embedding": embeddings[i]
             })
@@ -272,14 +280,36 @@ def chat():
         response = supabase.rpc("match_documents", rpc_params).execute()
         context_text = "\n\n".join([f"[Source: {d['metadata']['filename']}]\n{d['content']}" for d in response.data])
         
+        # NEW CODE: Include Page Number in the context header
+        context_text = ""
+        for doc in response.data:
+            meta = doc['metadata']
+            filename = meta.get('filename', 'Unknown')
+            page_num = meta.get('page', '?') # Fetch the page we saved earlier
+            
+            # We format it like this so the LLM clearly sees the source
+            context_text += f"[Source: {filename}, Page: {page_num}]\n{doc['content']}\n\n"
+            
         if not context_text:
             return jsonify({"response": f"I couldn't find information in {subject} ({unit})."})
-
         # 3. Build Message Chain with History
         # Start with System Prompt
         messages = [
-            {"role": "system", "content": f"You are an expert Engineering Tutor. Answer based on this Context:\n{context_text}"}
-        ]
+        {
+            "role": "system", 
+            "content": f"""
+            You are an expert Engineering Tutor.
+            
+            Context provided below:
+            {context_text}
+            
+            Instructions:
+            1. Answer the user's question strictly based on the Context.
+            2. If you find the answer, YOU MUST cite the source and page number at the end.
+            3. Format: (Source: filename.pdf, Page X).
+            """
+        }
+    ]
         
         # Append last 3 turns of history (prevents token overflow)
         for msg in history[-3:]: 
