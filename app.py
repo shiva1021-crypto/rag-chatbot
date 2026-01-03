@@ -6,6 +6,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from groq import Groq
 from supabase import create_client, Client
+import json # <--- Add this with your other imports
 
 load_dotenv()
 
@@ -30,6 +31,36 @@ embedding_model = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 
 # --- Routes ---
 # --- Add this to your app.py (anywhere before if __name__ == '__main__':) ---
+
+# --- Add this route to app.py ---
+
+@app.route('/delete_file', methods=['POST'])
+def delete_file():
+    # 1. Security Check
+    if session.get('role') != 'admin':
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    data = request.json
+    subject = data.get('subject')
+    unit = data.get('unit')
+    filename = data.get('filename')
+
+    if not (subject and unit and filename):
+        return jsonify({"error": "Missing parameters"}), 400
+
+    try:
+        # 2. Delete vectors with matching metadata from Supabase
+        # We filter specifically by the metadata JSON fields
+        supabase.table("documents").delete() \
+            .filter("metadata->>subject", "eq", subject) \
+            .filter("metadata->>unit", "eq", unit) \
+            .filter("metadata->>filename", "eq", filename) \
+            .execute()
+        
+        return jsonify({"message": f"Deleted {filename}"})
+    except Exception as e:
+        print(f"Delete Error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/get_user_info', methods=['GET'])
 def get_user_info():
@@ -140,6 +171,16 @@ def upload_file():
     file.save(filepath)
 
     try:
+        # --- NEW STEP: Smart Clean-Up (Enables Re-uploading) ---
+        # Before adding, we delete any existing entries for this exact Filename+Subject+Unit.
+        # This prevents duplicate answers if the teacher updates a file.
+        supabase.table("documents").delete() \
+            .filter("metadata->>subject", "eq", subject) \
+            .filter("metadata->>unit", "eq", unit) \
+            .filter("metadata->>filename", "eq", file.filename) \
+            .execute()
+        # -------------------------------------------------------
+
         loader = PyPDFLoader(filepath)
         documents = loader.load()
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
@@ -148,13 +189,13 @@ def upload_file():
         texts = [c.page_content for c in chunks]
         embeddings = embedding_model.embed_documents(texts)
 
-        # 4. Insert with ACADEMIC METADATA AND USER_ID
+        # 4. Insert with ACADEMIC METADATA
         records = []
-        user_id = session.get('user_id') # <--- Get ID from session
+        user_id = session.get('user_id') 
 
         for i, chunk in enumerate(chunks):
             records.append({
-                "user_id": user_id,  # <--- CRITICAL FIX: Satisfy the database constraint
+                "user_id": user_id, 
                 "content": chunk.page_content,
                 "metadata": {
                     "subject": subject,
@@ -168,7 +209,7 @@ def upload_file():
 
         supabase.table("documents").insert(records).execute()
         os.remove(filepath)
-        return jsonify({"message": f"Uploaded to Subject: {subject}"})
+        return jsonify({"message": f"Successfully uploaded {file.filename} to {subject} ({unit})"})
         
     except Exception as e:
         print(f"Upload Error: {e}")
@@ -306,6 +347,68 @@ def clear_data():
         return jsonify({"message": "Conversation and storage cleared successfully!"})
     except Exception as e:
         print(f"Clear Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/generate_quiz', methods=['POST'])
+def generate_quiz():
+    data = request.json
+    subject = data.get('subject')
+    unit = data.get('unit')
+    
+    if not subject or not unit:
+        return jsonify({"error": "Please select a Subject and Unit first."}), 400
+
+    try:
+        # 1. Broad Retrieval: Search for "summary" to get a good overview of the unit
+        query_vec = embedding_model.embed_query("important definitions key concepts summary")
+        
+        rpc_params = {
+            "query_embedding": query_vec,
+            "match_threshold": 0.3, 
+            "match_count": 6,       # Fetch enough content for 5 questions
+            "filter": {"subject": subject, "unit": unit}
+        }
+        
+        response = supabase.rpc("match_documents", rpc_params).execute()
+        context_text = "\n".join([doc['content'] for doc in response.data])
+        
+        if not context_text:
+            return jsonify({"error": "Not enough content to generate a quiz."}), 400
+
+        # 2. Strict JSON Prompt
+        prompt = f"""
+        Based strictly on the following text, generate 5 Multiple Choice Questions (MCQs).
+        Return ONLY a raw JSON object with no markdown formatting.
+        
+        Structure:
+        {{
+            "questions": [
+                {{
+                    "id": 1,
+                    "question": "Question text?",
+                    "options": ["A", "B", "C", "D"],
+                    "answer": "The correct option text"
+                }}
+            ]
+        }}
+
+        Text:
+        {context_text}
+        """
+
+        # 3. AI Generation (Enforcing JSON mode if available, or relying on prompt)
+        chat_completion = client_groq.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.1-8b-instant",
+            temperature=0.2, # Low temperature for factual accuracy
+            response_format={"type": "json_object"} # Critical for valid JSON
+        )
+        
+        quiz_data = json.loads(chat_completion.choices[0].message.content)
+        return jsonify(quiz_data)
+        
+    except Exception as e:
+        print(f"Quiz Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':

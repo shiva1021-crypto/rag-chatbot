@@ -29,8 +29,11 @@
         .btn-upload:hover { background: #187032; }
         
         .file-list { margin-top: 20px; overflow-y: auto; flex: 1; }
-        .file-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .file-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.9rem; }
+        .file-info { display: flex; align-items: center; gap: 10px; }
         .file-icon { color: #d93025; }
+        .btn-delete { color: #d93025; background: none; border: none; padding: 5px; opacity: 0.7; transition: 0.2s; }
+        .btn-delete:hover { opacity: 1; background: #fee2e2; border-radius: 4px; }
 
         /* --- Student Specific --- */
         .chat-area { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; }
@@ -44,6 +47,19 @@
 
         /* Visibility Helpers */
         .hidden { display: none !important; }
+
+        /* --- Quiz Modal Styles --- */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 600px; border-radius: 12px; max-height: 80vh; overflow-y: auto; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+
+        .quiz-option { display: block; width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; background: white; text-align: left; cursor: pointer; transition: 0.2s; }
+        .quiz-option:hover { background: #f0f4f9; }
+        .quiz-option.correct { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .quiz-option.wrong { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .quiz-btn { background: #673ab7; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; margin-top: 15px; font-weight: 500; cursor: pointer; }
+        .quiz-btn:hover { background: #5e35b1; }
     </style>
 </head>
 <body>
@@ -59,7 +75,8 @@
             <div class="upload-card">
                 <h3><i class="fas fa-cloud-upload-alt"></i> Upload Syllabus</h3>
                 <label>Subject Name</label>
-                <input type="text" id="t_subject" placeholder="e.g. Thermodynamics">
+                <input type="text" id="t_subject" list="subjectList" placeholder="Select existing or type new...">
+                <datalist id="subjectList"></datalist>
                 
                 <label>Unit / Module</label>
                 <input type="text" id="t_unit" placeholder="e.g. Unit 1">
@@ -89,6 +106,10 @@
                     <div style="padding:10px; color:#999; text-align:center;">Select Unit to view files</div>
                 </div>
             </div>
+
+            <button class="quiz-btn" onclick="generateQuiz()" id="btnQuiz" disabled>
+                <i class="fas fa-brain"></i> Take AI Quiz
+            </button>
         </div>
         
         <div id="teacherFileList" class="file-list hidden">
@@ -125,32 +146,38 @@
 
     </div>
 
+    <div id="quizModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeQuiz()">&times;</span>
+            <h2 style="margin-bottom: 20px;"><i class="fas fa-clipboard-check"></i> Knowledge Check</h2>
+            <div id="quizContainer">
+                <div style="text-align: center; padding: 20px;">
+                    <i class="fas fa-spinner fa-spin fa-3x" style="color: #673ab7;"></i>
+                    <p>Generating questions from your notes...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        let libraryData = {}; // Stores { "Physics": { "Unit 1": ["file1.pdf"] } }
+        let libraryData = {}; 
 
         window.onload = async function() {
-            // 1. Identify User
             const role = localStorage.getItem('user_role');
-            const email = "User"; // You can fetch real email from API if needed
             document.getElementById('portalTitle').innerHTML = role === 'admin' ? 
                 '<i class="fas fa-chalkboard-teacher"></i> Teacher Portal' : 
                 '<i class="fas fa-user-graduate"></i> Student Portal';
             
-            // 2. Fetch Library Data (Subjects/Units/Files)
             await fetchLibrary();
 
-            // 3. Toggle Interfaces
             if (role === 'admin') {
-                // Teacher view
                 document.getElementById('teacherControls').classList.remove('hidden');
                 document.getElementById('teacherFileList').classList.remove('hidden');
-    
-                document.getElementById('teacherView').classList.remove('hidden'); // Remove class first
+                document.getElementById('teacherView').classList.remove('hidden');
                 document.getElementById('teacherView').style.display = 'flex';
             } else {
                 document.getElementById('studentControls').classList.remove('hidden');
-    
-                document.getElementById('studentView').classList.remove('hidden'); // <--- FIX ADDED
+                document.getElementById('studentView').classList.remove('hidden');
                 document.getElementById('studentView').style.display = 'flex';
                 populateStudentSubjects();
             }
@@ -161,7 +188,6 @@
             try {
                 const res = await fetch('/get_library');
                 libraryData = await res.json();
-                
                 if(localStorage.getItem('user_role') === 'admin') renderTeacherLibrary();
             } catch(e) { console.error("Library load failed", e); }
         }
@@ -195,27 +221,56 @@
                 
                 if(res.ok) {
                     status.innerHTML = '<span style="color:green">Success!</span>';
-                    document.getElementById('t_file').value = ''; // Clear file input
-                    await fetchLibrary(); // Refresh list
+                    document.getElementById('t_file').value = '';
+                    await fetchLibrary(); 
                 } else {
                     status.innerText = "Error: " + (data.error || "Failed");
                 }
             } catch(e) { status.innerText = "Upload failed."; }
         }
 
+        async function deleteFile(subject, unit, filename) {
+            if(!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+
+            try {
+                const res = await fetch('/delete_file', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ subject, unit, filename })
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    await fetchLibrary(); // Refresh UI
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch(e) { alert("Delete failed"); }
+        }
+
         function renderTeacherLibrary() {
             const list = document.getElementById('libraryList');
+            const dataList = document.getElementById('subjectList');
+            
             list.innerHTML = "";
+            dataList.innerHTML = ""; 
+
             for (const [subj, units] of Object.entries(libraryData)) {
+                dataList.innerHTML += `<option value="${subj}">`;
+
                 for (const [unit, files] of Object.entries(units)) {
                     files.forEach(f => {
                         list.innerHTML += `
                         <div class="file-item">
-                            <i class="fas fa-file-pdf file-icon"></i>
-                            <div>
-                                <strong>${subj}</strong> - ${unit}<br>
-                                <span style="font-size:0.8em; color:#666;">${f}</span>
+                            <div class="file-info">
+                                <i class="fas fa-file-pdf file-icon"></i>
+                                <div>
+                                    <strong>${subj}</strong> - ${unit}<br>
+                                    <span style="font-size:0.8em; color:#666;">${f}</span>
+                                </div>
                             </div>
+                            <button class="btn-delete" onclick="deleteFile('${subj}', '${unit}', '${f}')" title="Delete File">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>`;
                     });
                 }
@@ -249,12 +304,13 @@
             const unit = document.getElementById('s_unit').value;
             const display = document.getElementById('fileListDisplay');
             
-            // Enable Chat
             document.getElementById('userQuery').disabled = false;
             document.getElementById('sendBtn').disabled = false;
+            // NEW: Enable Quiz Button
+            document.getElementById('btnQuiz').disabled = false;
+
             document.getElementById('userQuery').placeholder = `Chatting about ${subj} (${unit})...`;
 
-            // Show Files
             display.innerHTML = "";
             const files = libraryData[subj]?.[unit] || [];
             if(files.length === 0) {
@@ -263,12 +319,13 @@
                 files.forEach(f => {
                     display.innerHTML += `
                     <div class="file-item">
-                        <i class="fas fa-file-pdf file-icon"></i> ${f}
+                        <div class="file-info">
+                            <i class="fas fa-file-pdf file-icon"></i> ${f}
+                        </div>
                     </div>`;
                 });
             }
             
-            // Reset Chat
             document.getElementById('chatBox').innerHTML = `
                 <div style="text-align: center; margin-top: 20px; color: #666;">
                     <h3>Studying: ${unit}</h3>
@@ -301,6 +358,97 @@
                 const data = await res.json();
                 loading.innerHTML = marked.parse(data.response || data.error);
             } catch(e) { loading.innerText = "Error connecting to tutor."; }
+        }
+
+        // --- QUIZ LOGIC ---
+        const quizModal = document.getElementById('quizModal');
+        
+        function closeQuiz() { 
+            quizModal.style.display = "none"; 
+        }
+
+        async function generateQuiz() {
+            const subject = document.getElementById('s_subject').value;
+            const unit = document.getElementById('s_unit').value;
+            const container = document.getElementById('quizContainer');
+            
+            quizModal.style.display = "block";
+            container.innerHTML = `
+                <div style="text-align:center; padding:40px;">
+                    <i class="fas fa-robot fa-2x" style="margin-bottom:10px;"></i><br>
+                    Reading <strong>${unit}</strong> documents to create a quiz...
+                </div>`;
+
+            try {
+                const res = await fetch('/generate_quiz', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ subject, unit })
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    container.innerHTML = `<p style="color:red; text-align:center;">${data.error}</p>`;
+                    return;
+                }
+
+                renderQuiz(data.questions);
+            } catch (e) {
+                container.innerHTML = `<p style="color:red; text-align:center;">Failed to generate quiz.</p>`;
+            }
+        }
+
+        function renderQuiz(questions) {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = "";
+
+            questions.forEach((q, index) => {
+                const qDiv = document.createElement('div');
+                qDiv.style.marginBottom = "30px";
+                qDiv.innerHTML = `
+                    <p style="font-weight:600; margin-bottom:10px;">${index + 1}. ${q.question}</p>
+                `;
+
+                q.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quiz-option';
+                    btn.innerText = opt;
+                    btn.onclick = () => checkAnswer(btn, opt, q.answer);
+                    qDiv.appendChild(btn);
+                });
+
+                container.appendChild(qDiv);
+            });
+        }
+
+        function checkAnswer(btn, selected, correct) {
+            const parent = btn.parentElement;
+            const buttons = parent.getElementsByClassName('quiz-option');
+            
+            // Disable all buttons for this question
+            Array.from(buttons).forEach(b => b.disabled = true);
+
+            if (selected === correct) {
+                btn.classList.add('correct');
+                btn.innerHTML += ' <i class="fas fa-check"></i>';
+            } else {
+                btn.classList.add('wrong');
+                btn.innerHTML += ' <i class="fas fa-times"></i>';
+                
+                // Highlight the correct one
+                Array.from(buttons).forEach(b => {
+                    if (b.innerText === correct) {
+                        b.classList.add('correct');
+                    }
+                });
+            }
+        }
+
+        // Close modal if clicked outside
+        window.onclick = function(event) {
+            if (event.target == quizModal) {
+                closeQuiz();
+            }
         }
     </script>
 </body>
