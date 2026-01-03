@@ -252,60 +252,64 @@ def chat():
     data = request.json
     user_query = data.get('query')
     subject = data.get('subject')
-    unit = data.get('unit') # <--- NEW: Filter by Unit
-
+    unit = data.get('unit')
+    history = data.get('history', []) # <--- NEW: Receive chat history
+    
     if not subject: return jsonify({"error": "Please select a subject."}), 400
 
     # 1. Embed Query
     query_vector = embedding_model.embed_query(user_query)
 
-    # 2. Build Filter
-    # We filter by Subject AND Unit (if provided)
-    meta_filter = {"subject": subject}
-    if unit:
-        meta_filter["unit"] = unit
-
+    # 2. Retrieve Context (Strict Filter)
     rpc_params = {
         "query_embedding": query_vector,
         "match_threshold": 0.4, 
         "match_count": 4,
-        "filter": meta_filter # <--- Stricter Filter
+        "filter": {"subject": subject, "unit": unit}
     }
     
     try:
         response = supabase.rpc("match_documents", rpc_params).execute()
-        docs = response.data
+        context_text = "\n\n".join([f"[Source: {d['metadata']['filename']}]\n{d['content']}" for d in response.data])
         
-        # Build Context
-        context_text = ""
-        for doc in docs:
-            meta = doc['metadata']
-            context_text += f"[Source: {meta['filename']}, {meta['unit']}]\n{doc['content']}\n\n"
-            
         if not context_text:
             return jsonify({"response": f"I couldn't find information in {subject} ({unit})."})
 
-        # 3. System Prompt
-        system_prompt = f"""
-        You are an expert Engineering Tutor.
-        Context:
-        {context_text}
+        # 3. Build Message Chain with History
+        # Start with System Prompt
+        messages = [
+            {"role": "system", "content": f"You are an expert Engineering Tutor. Answer based on this Context:\n{context_text}"}
+        ]
         
-        Question: {user_query}
-        
-        Answer strictly based on the Context. Cite the [Source] at the end.
-        """
+        # Append last 3 turns of history (prevents token overflow)
+        for msg in history[-3:]: 
+            messages.append({"role": msg['role'], "content": msg['content']})
 
+        # Append current user question
+        messages.append({"role": "user", "content": user_query})
+
+        # 4. Generate Answer
         chat_completion = client_groq.chat.completions.create(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_query}
-            ],
+            messages=messages,
             model="llama-3.1-8b-instant",
             temperature=0.3,
         )
         
-        return jsonify({"response": chat_completion.choices[0].message.content})
+        ai_response = chat_completion.choices[0].message.content
+        
+        # 5. Save to DB for persistent history
+        try:
+            supabase.table('chats').insert({
+                "user_id": user_id, "message": user_query, "role": "user"
+            }).execute()
+            supabase.table('chats').insert({
+                "user_id": user_id, "message": ai_response, "role": "assistant"
+            }).execute()
+            print(f"✅ Successfully saved chat to DB for user {user_id}")
+        except Exception as db_error:
+            print(f"Failed to log chat: {db_error}")
+        
+        return jsonify({"response": ai_response})
         
     except Exception as e:
         print(f"Chat Error: {e}")

@@ -160,7 +160,9 @@
     </div>
 
     <script>
-        let libraryData = {}; 
+        let libraryData = {};
+        // 1. Initialize Chat History Variable
+        let chatHistory = []; 
 
         window.onload = async function() {
             const role = localStorage.getItem('user_role');
@@ -304,9 +306,11 @@
             const unit = document.getElementById('s_unit').value;
             const display = document.getElementById('fileListDisplay');
             
+            // 2. Clear History on Unit Change
+            chatHistory = [];
+
             document.getElementById('userQuery').disabled = false;
             document.getElementById('sendBtn').disabled = false;
-            // NEW: Enable Quiz Button
             document.getElementById('btnQuiz').disabled = false;
 
             document.getElementById('userQuery').placeholder = `Chatting about ${subj} (${unit})...`;
@@ -326,6 +330,7 @@
                 });
             }
             
+            // Reset Chat UI
             document.getElementById('chatBox').innerHTML = `
                 <div style="text-align: center; margin-top: 20px; color: #666;">
                     <h3>Studying: ${unit}</h3>
@@ -340,24 +345,43 @@
             if(!query) return;
 
             const chatBox = document.getElementById('chatBox');
-            chatBox.innerHTML += `<div class="message user-msg">${query}</div>`;
+            // Render User Message
+            chatBox.innerHTML += `<div class="message user-msg">${marked.parse(query)}</div>`;
             document.getElementById('userQuery').value = '';
 
-            const loading = document.createElement('div');
-            loading.className = 'message bot-msg';
-            loading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing notes...';
-            chatBox.appendChild(loading);
+            // Render Loading State
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot-msg';
+            loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            chatBox.appendChild(loadingDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
+                // 3. Send Query + History
                 const res = await fetch('/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ query, subject, unit })
+                    body: JSON.stringify({ 
+                        query, 
+                        subject, 
+                        unit,
+                        history: chatHistory // <--- Sending history
+                    })
                 });
+                
                 const data = await res.json();
-                loading.innerHTML = marked.parse(data.response || data.error);
-            } catch(e) { loading.innerText = "Error connecting to tutor."; }
+                const responseText = data.response || data.error;
+
+                // 4. Update UI with AI Response
+                loadingDiv.innerHTML = marked.parse(responseText);
+                
+                // 5. Update History Memory
+                chatHistory.push({ role: "user", content: query });
+                chatHistory.push({ role: "assistant", content: responseText });
+
+            } catch(e) { 
+                loadingDiv.innerText = "Error connecting to tutor."; 
+            }
         }
 
         // --- QUIZ LOGIC ---
