@@ -3,52 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Portal</title>
+    <title>EduGraph Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <style>
-        :root { --primary: #0b57d0; --bg: #f8f9fa; --sidebar: #ffffff; }
+        :root { --primary: #0b57d0; --bg: #f8f9fa; --sidebar: #ffffff; --card-bg: #ffffff; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         body { display: flex; height: 100vh; background: var(--bg); overflow: hidden; }
 
         /* --- Layout --- */
-        .sidebar { width: 300px; background: var(--sidebar); border-right: 1px solid #ddd; display: flex; flex-direction: column; padding: 20px; }
-        .main { flex: 1; display: flex; flex-direction: column; position: relative; }
+        .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; padding: 25px; z-index: 2; }
+        .main { flex: 1; display: flex; flex-direction: column; position: relative; overflow-y: auto; }
         
-        h2 { font-size: 1.2rem; margin-bottom: 20px; color: #333; display: flex; align-items: center; gap: 10px; }
-        label { font-size: 0.8rem; font-weight: 600; color: #555; margin-top: 15px; display: block; margin-bottom: 5px; }
+        .nav-btn {
+            width: 100%; padding: 12px; margin-bottom: 8px; text-align: left;
+            background: none; border: none; border-radius: 8px; color: #555;
+            font-weight: 500; cursor: pointer; transition: 0.2s;
+        }
+        .nav-btn:hover { background: #f0f4f9; color: var(--primary); }
+        .nav-btn.active { background: #e8f0fe; color: var(--primary); font-weight: 600; }
+        .nav-btn i { margin-right: 10px; width: 20px; text-align: center; }
+
+        /* --- Dashboard Grid --- */
+        .dashboard-container { padding: 30px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
         
+        /* Metric Cards */
+        .metric-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .metric-title { font-size: 0.85rem; color: #666; font-weight: 500; margin-bottom: 10px; }
+        .metric-value { font-size: 1.8rem; font-weight: 600; color: #333; }
+        
+        /* Chart Cards */
+        .chart-card { background: var(--card-bg); padding: 25px; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 4px 15px rgba(0,0,0,0.03); grid-column: span 2; }
+        .full-width { grid-column: span 4; }
+
+        /* Recent Activity List */
+        .activity-list { list-style: none; }
+        .activity-item { padding: 12px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; color: #444; display: flex; align-items: center; gap: 10px; }
+        .activity-item i { color: #ccc; }
+
+        /* --- Standard Components (Inputs, etc) --- */
         select, input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px; }
-        button { cursor: pointer; }
-
-        /* --- Teacher Specific --- */
-        .upload-card { background: white; padding: 20px; border-radius: 10px; border: 1px solid #ddd; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .btn-upload { background: #1e8e3e; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 500; }
-        .btn-upload:hover { background: #187032; }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; cursor: pointer; }
+        .btn-primary:hover { background: #0842a0; }
         
-        .file-list { margin-top: 20px; overflow-y: auto; flex: 1; }
-        .file-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.9rem; }
-        .file-info { display: flex; align-items: center; gap: 10px; }
-        .file-icon { color: #d93025; }
-        .btn-delete { color: #d93025; background: none; border: none; padding: 5px; opacity: 0.7; transition: 0.2s; }
-        .btn-delete:hover { opacity: 1; background: #fee2e2; border-radius: 4px; }
-
-        /* --- Student Specific --- */
+        /* --- Student Chat --- */
         .chat-area { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; }
-        .message { padding: 15px 20px; border-radius: 12px; line-height: 1.5; max-width: 80%; }
-        .user-msg { background: #e8f0fe; align-self: flex-end; color: #1f1f1f; }
-        .bot-msg { background: white; align-self: flex-start; border: 1px solid #eee; width: 100%; }
-        
+        .message { padding: 15px 20px; border-radius: 12px; max-width: 80%; line-height: 1.5; }
+        .user-msg { background: #e8f0fe; align-self: flex-end; }
+        .bot-msg { background: white; border: 1px solid #eee; align-self: flex-start; }
         .input-area { padding: 20px; background: white; border-top: 1px solid #ddd; display: flex; gap: 10px; }
         textarea { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #ccc; resize: none; height: 50px; }
-        .btn-send { background: var(--primary); color: white; border: none; padding: 0 25px; border-radius: 20px; }
 
-        /* Visibility Helpers */
         .hidden { display: none !important; }
 
-        /* --- Quiz Modal Styles --- */
+        /* --- NEW: Quiz Modal Styles --- */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 600px; border-radius: 12px; max-height: 80vh; overflow-y: auto; }
         .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
@@ -58,87 +69,122 @@
         .quiz-option:hover { background: #f0f4f9; }
         .quiz-option.correct { background: #d4edda; border-color: #c3e6cb; color: #155724; }
         .quiz-option.wrong { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
-        .quiz-btn { background: #673ab7; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; margin-top: 15px; font-weight: 500; cursor: pointer; }
-        .quiz-btn:hover { background: #5e35b1; }
+
+        /* The Purple Quiz Button */
+        .btn-quiz { background: #673ab7; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; margin-top: 15px; font-weight: 500; cursor: pointer; }
+        .btn-quiz:hover { background: #5e35b1; }
+        .btn-quiz:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
-            <h2 id="portalTitle">Portal</h2>
-            <div style="font-size: 0.85rem; color: #666;" id="userEmail">Loading...</div>
-            <button onclick="logout()" style="color: #d93025; background: none; border: none; font-size: 0.8rem; margin-top: 5px; text-decoration: underline;">Sign Out</button>
-        </div>
-
-        <div id="teacherControls" class="hidden">
-            <div class="upload-card">
-                <h3><i class="fas fa-cloud-upload-alt"></i> Upload Syllabus</h3>
-                <label>Subject Name</label>
-                <input type="text" id="t_subject" list="subjectList" placeholder="Select existing or type new...">
-                <datalist id="subjectList"></datalist>
-                
-                <label>Unit / Module</label>
-                <input type="text" id="t_unit" placeholder="e.g. Unit 1">
-                
-                <label>PDF Document</label>
-                <input type="file" id="t_file" accept=".pdf">
-                
-                <button class="btn-upload" onclick="uploadFile()">Upload File</button>
-                <div id="uploadStatus" style="font-size: 0.8rem; margin-top: 10px; text-align: center;"></div>
-            </div>
-        </div>
-
-        <div id="studentControls" class="hidden">
-            <label>1. Select Subject</label>
-            <select id="s_subject" onchange="loadUnits()">
-                <option value="" disabled selected>-- Choose Subject --</option>
-            </select>
-
-            <label>2. Select Unit</label>
-            <select id="s_unit" onchange="loadFiles()" disabled>
-                <option value="" disabled selected>-- Choose Unit --</option>
-            </select>
-
-            <div style="margin-top: 20px;">
-                <label>📚 Course Materials</label>
-                <div id="fileListDisplay" class="file-list" style="max-height: 200px; background: white; border: 1px solid #eee; border-radius: 6px;">
-                    <div style="padding:10px; color:#999; text-align:center;">Select Unit to view files</div>
-                </div>
-            </div>
-
-            <button class="quiz-btn" onclick="generateQuiz()" id="btnQuiz" disabled>
-                <i class="fas fa-brain"></i> Take AI Quiz
+        <h2 style="margin-bottom: 30px; color:#333;"><i class="fas fa-graduation-cap"></i> EduGraph</h2>
+        
+        <div id="teacherNav" class="hidden">
+            <button class="nav-btn active" onclick="switchView('dashboard')" id="navDash">
+                <i class="fas fa-chart-line"></i> Analytics
+            </button>
+            <button class="nav-btn" onclick="switchView('library')" id="navLib">
+                <i class="fas fa-book"></i> Library Manager
             </button>
         </div>
-        
-        <div id="teacherFileList" class="file-list hidden">
-            <h4>Uploaded Library</h4>
-            <div id="libraryList"></div>
+
+        <div id="studentNav" class="hidden">
+            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
+                <label style="font-size: 0.85rem; font-weight: 600;">1. Select Subject</label>
+                <select id="s_subject" onchange="loadUnits()"></select>
+                
+                <label style="font-size: 0.85rem; font-weight: 600;">2. Select Unit</label>
+                <select id="s_unit" onchange="loadFiles()" disabled></select>
+
+                <button class="btn-quiz" onclick="generateQuiz()" id="btnQuiz" disabled>
+                    <i class="fas fa-brain"></i> Take AI Quiz
+                </button>
+            </div>
+            <div id="fileListDisplay" style="font-size: 0.85rem; color: #666; padding-left: 5px;"></div>
+        </div>
+
+        <div style="margin-top: auto;">
+            <button onclick="logout()" class="nav-btn" style="color: #d93025;"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
         </div>
     </div>
 
     <div class="main">
         
-        <div id="teacherView" class="hidden" style="display: flex; align-items: center; justify-content: center; height: 100%; color: #888;">
-            <div style="text-align: center;">
-                <i class="fas fa-chalkboard-teacher" style="font-size: 4rem; margin-bottom: 20px; color: #ccc;"></i>
-                <h1>Teacher Dashboard</h1>
-                <p>Use the sidebar to upload and manage course content.</p>
+        <div id="viewDashboard" class="dashboard-container hidden">
+            <div class="metric-card">
+                <div class="metric-title">Total Questions Asked</div>
+                <div class="metric-value" id="statQueries">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Active Students</div>
+                <div class="metric-value" id="statStudents">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Top Subject</div>
+                <div class="metric-value" id="statTopSubject" style="font-size: 1.2rem;">-</div>
+            </div>
+             <div class="metric-card">
+                <div class="metric-title">System Status</div>
+                <div class="metric-value" style="color: green; font-size: 1.2rem;">● Operational</div>
+            </div>
+
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-pie"></i> Topic Distribution</h3>
+                <canvas id="subjectChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3><i class="fas fa-history"></i> Activity Trend (7 Days)</h3>
+                <canvas id="trendChart"></canvas>
+            </div>
+
+            <div class="chart-card full-width">
+                <h3><i class="fas fa-comments"></i> Recent Student Questions</h3>
+                <ul class="activity-list" id="recentQueriesList">
+                    <li>Loading...</li>
+                </ul>
             </div>
         </div>
 
-        <div id="studentView" class="hidden" style="display: flex; flex-direction: column; height: 100%;">
+        <div id="viewLibrary" class="dashboard-container hidden">
+            <div class="chart-card full-width">
+                <h3>Upload New Material</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+                    <div>
+                        <label>Subject</label>
+                        <input type="text" id="t_subject" list="subjectList" placeholder="Subject...">
+                        <datalist id="subjectList"></datalist>
+                    </div>
+                    <div>
+                        <label>Unit</label>
+                        <input type="text" id="t_unit" placeholder="Unit...">
+                    </div>
+                    <div>
+                        <label>File (PDF)</label>
+                        <input type="file" id="t_file" accept=".pdf">
+                    </div>
+                    <button class="btn-primary" onclick="uploadFile()" style="margin-bottom: 10px;">Upload</button>
+                </div>
+                <div id="uploadStatus"></div>
+            </div>
+
+            <div class="chart-card full-width">
+                <h3>Current Library</h3>
+                <div id="libraryList"></div>
+            </div>
+        </div>
+
+        <div id="viewStudent" class="hidden" style="display: flex; flex-direction: column; height: 100%;">
             <div class="chat-area" id="chatBox">
                 <div style="text-align: center; margin-top: 50px; color: #aaa;">
                     <h1><i class="fas fa-robot"></i> AI Tutor</h1>
-                    <p>Select a Subject and Unit to start studying.</p>
+                    <p>Select a Subject and Unit to start.</p>
                 </div>
             </div>
-            
             <div class="input-area">
-                <textarea id="userQuery" placeholder="Ask a question about the selected unit..." disabled></textarea>
-                <button class="btn-send" onclick="sendChat()" id="sendBtn" disabled>
+                <textarea id="userQuery" placeholder="Ask a question..." disabled></textarea>
+                <button class="btn-primary" onclick="sendChat()" id="sendBtn" disabled style="width: auto; padding: 0 25px; border-radius: 20px;">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
@@ -149,11 +195,11 @@
     <div id="quizModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeQuiz()">&times;</span>
-            <h2 style="margin-bottom: 20px;"><i class="fas fa-clipboard-check"></i> Knowledge Check</h2>
+            <h2 style="margin-bottom: 20px; color:#333;"><i class="fas fa-clipboard-check"></i> Knowledge Check</h2>
             <div id="quizContainer">
                 <div style="text-align: center; padding: 20px;">
                     <i class="fas fa-spinner fa-spin fa-3x" style="color: #673ab7;"></i>
-                    <p>Generating questions from your notes...</p>
+                    <p>Generating questions...</p>
                 </div>
             </div>
         </div>
@@ -161,45 +207,60 @@
 
     <script>
         let libraryData = {};
-        // 1. Initialize Chat History Variable
-        let chatHistory = []; 
+        let chatHistory = [];
+        let subjectChartRef = null;
+        let trendChartRef = null;
 
+        // --- INITIALIZATION ---
         window.onload = async function() {
             const role = localStorage.getItem('user_role');
-            document.getElementById('portalTitle').innerHTML = role === 'admin' ? 
-                '<i class="fas fa-chalkboard-teacher"></i> Teacher Portal' : 
-                '<i class="fas fa-user-graduate"></i> Student Portal';
-            
+            if (!role) { window.location.href = '/login'; return; }
+
+            // Fetch library data immediately for both roles
             await fetchLibrary();
 
             if (role === 'admin') {
-                document.getElementById('teacherControls').classList.remove('hidden');
-                document.getElementById('teacherFileList').classList.remove('hidden');
-                document.getElementById('teacherView').classList.remove('hidden');
-                document.getElementById('teacherView').style.display = 'flex';
+                document.getElementById('teacherNav').classList.remove('hidden');
+                switchView('dashboard'); // Default to dashboard
             } else {
-                document.getElementById('studentControls').classList.remove('hidden');
-                document.getElementById('studentView').classList.remove('hidden');
-                document.getElementById('studentView').style.display = 'flex';
-                populateStudentSubjects();
+                document.getElementById('studentNav').classList.remove('hidden');
+                document.getElementById('viewStudent').classList.remove('hidden');
+                document.getElementById('viewStudent').style.display = 'flex';
+                populateStudentSubjects(); // Fill the dropdowns
             }
         };
 
-        // --- SHARED FUNCTIONS ---
+        function switchView(viewName) {
+            // Hide all views
+            ['viewDashboard', 'viewLibrary'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['navDash', 'navLib'].forEach(id => document.getElementById(id).classList.remove('active'));
+
+            if (viewName === 'dashboard') {
+                document.getElementById('viewDashboard').classList.remove('hidden');
+                document.getElementById('navDash').classList.add('active');
+                loadDashboardData();
+            } else {
+                document.getElementById('viewLibrary').classList.remove('hidden');
+                document.getElementById('navLib').classList.add('active');
+                renderTeacherLibrary();
+            }
+        }
+
         async function fetchLibrary() {
             try {
                 const res = await fetch('/get_library');
                 libraryData = await res.json();
-                if(localStorage.getItem('user_role') === 'admin') renderTeacherLibrary();
-            } catch(e) { console.error("Library load failed", e); }
+                // If we are currently on the library view, re-render the list
+                if (!document.getElementById('viewLibrary').classList.contains('hidden')) {
+                    renderTeacherLibrary();
+                }
+            } catch (e) { console.error("Library fetch failed", e); }
         }
 
-        function logout() {
-            localStorage.clear();
-            window.location.href = '/auth/logout';
-        }
+        // ==========================================
+        //  TEACHER FUNCTIONS
+        // ==========================================
 
-        // --- TEACHER LOGIC ---
         async function uploadFile() {
             const subject = document.getElementById('t_subject').value.trim();
             const unit = document.getElementById('t_unit').value.trim();
@@ -207,7 +268,8 @@
             const status = document.getElementById('uploadStatus');
 
             if(!subject || !unit || !file) {
-                alert("Please fill all fields."); return;
+                alert("Please fill all fields (Subject, Unit, and File)."); 
+                return;
             }
 
             status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
@@ -222,31 +284,17 @@
                 const data = await res.json();
                 
                 if(res.ok) {
-                    status.innerHTML = '<span style="color:green">Success!</span>';
-                    document.getElementById('t_file').value = '';
+                    status.innerHTML = '<span style="color:green"><i class="fas fa-check"></i> Success!</span>';
+                    document.getElementById('t_file').value = ''; 
+                    document.getElementById('t_unit').value = '';
                     await fetchLibrary(); 
                 } else {
-                    status.innerText = "Error: " + (data.error || "Failed");
+                    status.innerHTML = `<span style="color:#d93025">Error: ${data.error || "Failed"}</span>`;
                 }
-            } catch(e) { status.innerText = "Upload failed."; }
-        }
-
-        async function deleteFile(subject, unit, filename) {
-            if(!confirm(`Are you sure you want to delete "${filename}"?`)) return;
-
-            try {
-                const res = await fetch('/delete_file', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ subject, unit, filename })
-                });
-                const data = await res.json();
-                if(res.ok) {
-                    await fetchLibrary(); // Refresh UI
-                } else {
-                    alert("Error: " + data.error);
-                }
-            } catch(e) { alert("Delete failed"); }
+            } catch(e) { 
+                console.error(e);
+                status.innerText = "Upload failed (Server Error)."; 
+            }
         }
 
         function renderTeacherLibrary() {
@@ -258,19 +306,15 @@
 
             for (const [subj, units] of Object.entries(libraryData)) {
                 dataList.innerHTML += `<option value="${subj}">`;
-
                 for (const [unit, files] of Object.entries(units)) {
                     files.forEach(f => {
                         list.innerHTML += `
-                        <div class="file-item">
-                            <div class="file-info">
-                                <i class="fas fa-file-pdf file-icon"></i>
-                                <div>
-                                    <strong>${subj}</strong> - ${unit}<br>
-                                    <span style="font-size:0.8em; color:#666;">${f}</span>
-                                </div>
+                        <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${subj}</strong> - ${unit}
+                                <br><span style="font-size:0.85em; color:#666;">${f}</span>
                             </div>
-                            <button class="btn-delete" onclick="deleteFile('${subj}', '${unit}', '${f}')" title="Delete File">
+                            <button onclick="deleteFile('${subj}', '${unit}', '${f}')" style="color: #d93025; background: none; border: none; cursor: pointer;">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>`;
@@ -279,9 +323,101 @@
             }
         }
 
-        // --- STUDENT LOGIC ---
+        async function deleteFile(subject, unit, filename) {
+            if(!confirm(`Delete "${filename}"? This cannot be undone.`)) return;
+            try {
+                const res = await fetch('/delete_file', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ subject, unit, filename })
+                });
+                if(res.ok) {
+                    await fetchLibrary(); // Refresh list
+                    if(!document.getElementById('viewDashboard').classList.contains('hidden')) {
+                         loadDashboardData();
+                    }
+                } else {
+                    alert("Delete failed.");
+                }
+            } catch(e) { alert("Server error."); }
+        }
+
+        // ==========================================
+        //  DASHBOARD ANALYTICS
+        // ==========================================
+
+        async function loadDashboardData() {
+            try {
+                const res = await fetch('/dashboard_stats');
+                const data = await res.json();
+                
+                document.getElementById('statQueries').innerText = data.total_queries || 0;
+                document.getElementById('statStudents').innerText = data.active_students || 0;
+                
+                const subjects = data.subject_distribution || {};
+                const topSubj = Object.keys(subjects).reduce((a, b) => subjects[a] > subjects[b] ? a : b, "-");
+                document.getElementById('statTopSubject').innerText = topSubj;
+
+                renderSubjectChart(subjects);
+                renderTrendChart(data.activity_trend || {labels:[], data:[]});
+
+                const list = document.getElementById('recentQueriesList');
+                list.innerHTML = "";
+                if(data.recent_queries && data.recent_queries.length > 0) {
+                    data.recent_queries.forEach(q => {
+                        list.innerHTML += `<li class="activity-item"><i class="fas fa-comment-dots"></i> "${q}"</li>`;
+                    });
+                } else {
+                    list.innerHTML = `<li class="activity-item">No recent activity.</li>`;
+                }
+            } catch(e) { console.error("Dashboard error", e); }
+        }
+
+        function renderSubjectChart(dataObj) {
+            const ctx = document.getElementById('subjectChart').getContext('2d');
+            if(subjectChartRef) subjectChartRef.destroy();
+            
+            subjectChartRef = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(dataObj),
+                    datasets: [{
+                        data: Object.values(dataObj),
+                        backgroundColor: ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8e44ad']
+                    }]
+                }
+            });
+        }
+
+        function renderTrendChart(trendData) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if(trendChartRef) trendChartRef.destroy();
+
+            trendChartRef = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trendData.labels,
+                    datasets: [{
+                        label: 'Questions per Day',
+                        data: trendData.data,
+                        borderColor: '#0b57d0',
+                        tension: 0.3,
+                        fill: true,
+                        backgroundColor: 'rgba(11, 87, 208, 0.1)'
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        // ==========================================
+        //  STUDENT & CHAT FUNCTIONS
+        // ==========================================
+
         function populateStudentSubjects() {
             const sel = document.getElementById('s_subject');
+            if(!sel) return; 
+            
             sel.innerHTML = '<option value="" disabled selected>-- Choose Subject --</option>';
             Object.keys(libraryData).forEach(s => {
                 sel.innerHTML += `<option value="${s}">${s}</option>`;
@@ -291,6 +427,7 @@
         function loadUnits() {
             const subj = document.getElementById('s_subject').value;
             const unitSel = document.getElementById('s_unit');
+            
             unitSel.innerHTML = '<option value="" disabled selected>-- Choose Unit --</option>';
             unitSel.disabled = false;
 
@@ -301,94 +438,104 @@
             }
         }
 
+        // --- UPDATED: Enables Quiz Button ---
         function loadFiles() {
             const subj = document.getElementById('s_subject').value;
             const unit = document.getElementById('s_unit').value;
             const display = document.getElementById('fileListDisplay');
             
-            // 2. Clear History on Unit Change
-            chatHistory = [];
-
+            // Enable Chat Inputs
             document.getElementById('userQuery').disabled = false;
             document.getElementById('sendBtn').disabled = false;
-            document.getElementById('btnQuiz').disabled = false;
-
             document.getElementById('userQuery').placeholder = `Chatting about ${subj} (${unit})...`;
 
+            // NEW: Enable Quiz Button
+            document.getElementById('btnQuiz').disabled = false;
+
+            // Reset Chat History
+            chatHistory = []; 
+            document.getElementById('chatBox').innerHTML = `
+                <div style="text-align: center; margin-top: 50px; color: #aaa;">
+                    <h1><i class="fas fa-robot"></i> AI Tutor</h1>
+                    <p>Topic: ${subj} - ${unit}</p>
+                </div>`;
+
+            // Show Files
             display.innerHTML = "";
             const files = libraryData[subj]?.[unit] || [];
             if(files.length === 0) {
-                display.innerHTML = "<div style='padding:10px;'>No files found.</div>";
+                display.innerHTML = "No files.";
             } else {
                 files.forEach(f => {
-                    display.innerHTML += `
-                    <div class="file-item">
-                        <div class="file-info">
-                            <i class="fas fa-file-pdf file-icon"></i> ${f}
-                        </div>
-                    </div>`;
+                    display.innerHTML += `<div><i class="fas fa-file-pdf"></i> ${f}</div>`;
                 });
             }
-            
-            // Reset Chat UI
-            document.getElementById('chatBox').innerHTML = `
-                <div style="text-align: center; margin-top: 20px; color: #666;">
-                    <h3>Studying: ${unit}</h3>
-                    <p>Ask any question from the uploaded files.</p>
-                </div>`;
         }
 
         async function sendChat() {
             const query = document.getElementById('userQuery').value.trim();
             const subject = document.getElementById('s_subject').value;
             const unit = document.getElementById('s_unit').value;
-            if(!query) return;
-
             const chatBox = document.getElementById('chatBox');
-            // Render User Message
+
+            if (!subject || !unit) {
+                alert("Please select a Subject and Unit from the sidebar first!");
+                return;
+            }
+            if (!query) return;
+
+            // UI Updates
             chatBox.innerHTML += `<div class="message user-msg">${marked.parse(query)}</div>`;
             document.getElementById('userQuery').value = '';
 
-            // Render Loading State
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'message bot-msg';
-            loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
-            chatBox.appendChild(loadingDiv);
+            const loading = document.createElement('div');
+            loading.className = 'message bot-msg';
+            loading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Thinking...';
+            chatBox.appendChild(loading);
             chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
-                // 3. Send Query + History
                 const res = await fetch('/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
-                        query, 
-                        subject, 
-                        unit,
-                        history: chatHistory // <--- Sending history
+                        query: query, 
+                        subject: subject, 
+                        unit: unit,
+                        history: chatHistory 
                     })
                 });
-                
-                const data = await res.json();
-                const responseText = data.response || data.error;
 
-                // 4. Update UI with AI Response
-                loadingDiv.innerHTML = marked.parse(responseText);
+                const data = await res.json();
                 
-                // 5. Update History Memory
-                chatHistory.push({ role: "user", content: query });
-                chatHistory.push({ role: "assistant", content: responseText });
+                if(res.ok) {
+                    chatHistory.push({ role: "user", content: query });
+                    chatHistory.push({ role: "assistant", content: data.response });
+                }
+
+                loading.innerHTML = marked.parse(data.response || data.error);
 
             } catch(e) { 
-                loadingDiv.innerText = "Error connecting to tutor."; 
+                console.error(e);
+                loading.innerText = "Error communicating with AI."; 
             }
         }
 
-        // --- QUIZ LOGIC ---
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/auth/logout';
+        }
+
+        // ==========================================
+        //  NEW: QUIZ LOGIC
+        // ==========================================
         const quizModal = document.getElementById('quizModal');
-        
-        function closeQuiz() { 
-            quizModal.style.display = "none"; 
+
+        function closeQuiz() { quizModal.style.display = "none"; }
+
+        // Close modal if clicked outside
+        window.onclick = function(event) {
+            if (event.target == quizModal) closeQuiz();
         }
 
         async function generateQuiz() {
@@ -399,7 +546,7 @@
             quizModal.style.display = "block";
             container.innerHTML = `
                 <div style="text-align:center; padding:40px;">
-                    <i class="fas fa-robot fa-2x" style="margin-bottom:10px;"></i><br>
+                    <i class="fas fa-robot fa-2x" style="margin-bottom:10px; color:#673ab7;"></i><br>
                     Reading <strong>${unit}</strong> documents to create a quiz...
                 </div>`;
 
@@ -415,7 +562,6 @@
                     container.innerHTML = `<p style="color:red; text-align:center;">${data.error}</p>`;
                     return;
                 }
-
                 renderQuiz(data.questions);
             } catch (e) {
                 container.innerHTML = `<p style="color:red; text-align:center;">Failed to generate quiz.</p>`;
@@ -429,9 +575,7 @@
             questions.forEach((q, index) => {
                 const qDiv = document.createElement('div');
                 qDiv.style.marginBottom = "30px";
-                qDiv.innerHTML = `
-                    <p style="font-weight:600; margin-bottom:10px;">${index + 1}. ${q.question}</p>
-                `;
+                qDiv.innerHTML = `<p style="font-weight:600; margin-bottom:10px;">${index + 1}. ${q.question}</p>`;
 
                 q.options.forEach(opt => {
                     const btn = document.createElement('button');
@@ -440,7 +584,6 @@
                     btn.onclick = () => checkAnswer(btn, opt, q.answer);
                     qDiv.appendChild(btn);
                 });
-
                 container.appendChild(qDiv);
             });
         }
@@ -448,9 +591,7 @@
         function checkAnswer(btn, selected, correct) {
             const parent = btn.parentElement;
             const buttons = parent.getElementsByClassName('quiz-option');
-            
-            // Disable all buttons for this question
-            Array.from(buttons).forEach(b => b.disabled = true);
+            Array.from(buttons).forEach(b => b.disabled = true); // Disable all
 
             if (selected === correct) {
                 btn.classList.add('correct');
@@ -458,20 +599,10 @@
             } else {
                 btn.classList.add('wrong');
                 btn.innerHTML += ' <i class="fas fa-times"></i>';
-                
-                // Highlight the correct one
+                // Highlight correct
                 Array.from(buttons).forEach(b => {
-                    if (b.innerText === correct) {
-                        b.classList.add('correct');
-                    }
+                    if (b.innerText === correct) b.classList.add('correct');
                 });
-            }
-        }
-
-        // Close modal if clicked outside
-        window.onclick = function(event) {
-            if (event.target == quizModal) {
-                closeQuiz();
             }
         }
     </script>
