@@ -1,134 +1,141 @@
-Here is a professional, ready-to-use `README.md` file for your GitHub repository. It covers all the new features, setup instructions, and the architecture of your updated project.
+Here is the complete **Project Documentation** for your Hackathon submission.
 
-Copy the content below and save it as `README.md` in your project folder.
-
----
-
-```markdown
-# 🎓 EduGraph: Domain-Specific Student Assistant RAG Chatbot
-
-![Python](https://img.shields.io/badge/Python-3.11-blue)
-![Flask](https://img.shields.io/badge/Framework-Flask-green)
-![Supabase](https://img.shields.io/badge/Database-Supabase%20%2B%20pgvector-emerald)
-![AI](https://img.shields.io/badge/AI-Llama%203%20(Groq)-orange)
-
-**EduGraph** is a full-stack Retrieval-Augmented Generation (RAG) platform designed for educational institutions. Unlike generic AI chatbots, it allows teachers to create a **curated knowledge base** organized by Subjects and Units. Students can then chat with an AI Tutor that answers questions strictly grounded in the specific syllabus notes uploaded by the teacher.
+You can copy and paste this directly into your GitHub `README.md` or print it as a PDF report for the judges.
 
 ---
 
-## 🚀 Key Features
+# 📘 EduGraph: Domain-Specific AI Student Assistant
 
-### 👨‍🏫 Teacher Portal (Admin)
-* **Secure Access:** "Gatekeeper" login system using a secret Teacher Access Code.
-* **Syllabus Management:** Upload PDF documents tagged by **Subject** (e.g., Physics) and **Unit** (e.g., Module 1).
-* **Library View:** View all uploaded files organized hierarchically.
-
-### 🎓 Student Portal
-* **Context-Aware Study:** Select specific Subjects and Units to focus the AI's knowledge.
-* **RAG Chatbot:** Ask questions and get answers based *only* on the selected unit's material.
-* **Source Citations:** Every answer cites the specific source file used.
-* **Zero Hallucinations:** The AI refuses to answer questions outside the uploaded syllabus.
+**Bridging the gap between static curriculum and interactive AI learning.**
 
 ---
 
-## 🛠️ Tech Stack
+## 1. Project Overview
 
-* **Backend:** Python (Flask)
-* **Database:** Supabase (PostgreSQL)
-* **Vector Search:** `pgvector` (Cosine Similarity with Metadata Filtering)
-* **LLM:** Llama 3.1 8B Instant (via Groq API)
-* **Embeddings:** `BAAI/bge-small-en-v1.5` (via FastEmbed)
-* **Frontend:** HTML5, CSS3, Vanilla JavaScript
-* **Orchestration:** LangChain
+**EduGraph** is a Retrieval-Augmented Generation (RAG) powered student assistant designed specifically for university environments. Unlike generic AI tools (ChatGPT, Gemini), EduGraph limits its knowledge base strictly to **teacher-approved curriculum documents**.
+
+This ensures that every answer is **100% accurate to the syllabus**, fully cited with page numbers, and free from external hallucinations. It empowers students with interactive study tools while giving teachers real-time visibility into student learning gaps.
+
+### **The "Why" (Problem Statement)**
+
+* **Information Overload:** Students struggle to find specific concepts in hundreds of pages of static PDF notes.
+* **The Trust Gap:** Generic AI models hallucinate or provide answers outside the university syllabus, making them unreliable for exam prep.
+* **Educator Blind Spots:** Teachers upload materials to LMS platforms but have zero data on how students use them or where they struggle.
+* **Passive Learning:** Students lack on-demand active recall tools (quizzes) tailored to their specific weekly units.
 
 ---
 
-## ⚙️ Installation & Setup
+## 2. Key Features
 
-### 1. Prerequisites
-* **Python 3.11** (Required for FastEmbed compatibility).
-* A **Supabase** project (Free tier).
-* A **Groq** API Key (Free tier).
+### **For Students (The Learning Hub)**
 
-### 2. Clone the Repository
+* **🤖 Domain-Specific Chat:** Ask questions and get answers *only* from the uploaded Subject/Unit files.
+* **🔍 "Page Peeking" Citations:** Every answer includes a direct verification link (e.g., `[Source: Unit 1 Notes.pdf, Page 12]`) to build trust.
+* **🧠 Conversation Memory:** The AI remembers context (e.g., "Give me an example of *that*") for natural back-and-forth learning.
+* **📝 AI Quiz Mode:** Instantly generates a 5-question Multiple Choice Quiz (MCQ) based on the selected unit for self-assessment.
+
+### **For Teachers (The Command Center)**
+
+* **📊 Analytics Dashboard:** A professional dashboard visualizing "Top Subjects," "Activity Trends," and "Recent Queries."
+* **📂 Structured Knowledge Base:** Upload materials tagged by **Subject** and **Unit** (e.g., Physics > Unit 1) with auto-duplicate handling.
+* **🗑️ Content Management:** Full control to add, update, or delete outdated materials instantly.
+
+---
+
+## 3. Technology Stack
+
+| Component | Technology Used | Purpose |
+| --- | --- | --- |
+| **Backend** | Python (Flask) | API handling, Session logic, RAG pipeline orchestration. |
+| **Database** | Supabase (PostgreSQL) | Auth, Chat Logs, and Vector Store (`pgvector`). |
+| **AI Model** | Llama 3 (via Groq) | High-speed, low-latency LLM inference. |
+| **Embeddings** | FastEmbed | Lightweight, local vector embedding generation. |
+| **Frontend** | HTML5, JS, Chart.js | Responsive UI with real-time graphs and Markdown rendering. |
+| **Orchestration** | LangChain | PDF loading, chunking, and text splitting. |
+
+---
+
+## 4. System Architecture
+
+The project follows a **RAG (Retrieval-Augmented Generation)** architecture:
+
+1. **Ingestion:** Teachers upload PDFs → Text is split into chunks → Embedded via FastEmbed → Stored in Supabase Vector Store.
+2. **Retrieval:** Student asks a question → Query is embedded → Supabase performs a Similarity Search (Cosine Distance) *filtered by Subject/Unit*.
+3. **Generation:** Retrieved context + Conversation History + User Query are sent to Llama 3 → AI generates a cited answer.
+4. **Logging:** Interaction data (Subject, Unit, Query, Response) is logged to SQL for the Analytics Dashboard.
+
+---
+
+## 5. Installation & Setup Guide
+
+### **Prerequisites**
+
+* Python 3.11+
+* Supabase Account (Free Tier)
+* Groq API Key
+
+### **Step 1: Clone & Install**
+
 ```bash
-git clone [https://github.com/your-username/EduGraph.git](https://github.com/your-username/EduGraph.git)
-cd EduGraph
-
-```
-
-### 3. Set Up Virtual Environment
-
-```bash
-# Windows
+git clone https://github.com/your-username/edugraph.git
+cd edugraph
 python -m venv venv
-venv\Scripts\activate
-
-# Mac/Linux
-python3 -m venv venv
-source venv/bin/activate
-
-```
-
-### 4. Install Dependencies
-
-```bash
+source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
 
 ```
 
-### 5. Configure Environment Variables
+### **Step 2: Environment Variables (`.env`)**
 
 Create a `.env` file in the root directory:
 
 ```env
-GROQ_API_KEY=your_groq_api_key_here
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_KEY=your_supabase_anon_key
+GROQ_API_KEY="your_groq_key"
+SUPABASE_URL="your_supabase_url"
+SUPABASE_KEY="your_supabase_anon_key"
 
 ```
 
----
+### **Step 3: Database Setup (Supabase SQL)**
 
-## 🗄️ Database Setup (Supabase)
-
-Go to your Supabase **SQL Editor** and run the following commands to set up the schema and permissions:
+Run this SQL in your Supabase SQL Editor to set up the tables:
 
 ```sql
--- 1. Enable Vector Extension
-create extension if not exists vector;
+-- Enable Vector Extension
+create extension vector;
 
--- 2. Create Documents Table (Vector Store)
+-- Documents Table (Knowledge Base)
 create table documents (
   id bigserial primary key,
   content text,
   metadata jsonb,
-  embedding vector(384), -- Matching BAAI/bge-small-en-v1.5 dimensions
+  embedding vector(384),
   user_id uuid
 );
 
--- 3. Create Profiles Table (Role Management)
-create table profiles (
-  id uuid references auth.users not null primary key,
-  email text,
-  role text default 'student'
+-- Chats Table (Analytics)
+create table chats (
+  id bigserial primary key,
+  user_id uuid,
+  message text,
+  role text,
+  subject text,
+  unit text,
+  created_at timestamptz default now()
 );
 
--- 4. Create Match Function (For Vector Search)
+-- Search Function (RPC)
 create or replace function match_documents (
   query_embedding vector(384),
   match_threshold float,
   match_count int,
   filter jsonb
-)
-returns table (
+) returns table (
   id bigint,
   content text,
   metadata jsonb,
   similarity float
-)
-language plpgsql
-as $$
+) language plpgsql stable as $$
 begin
   return query
   select
@@ -137,83 +144,33 @@ begin
     documents.metadata,
     1 - (documents.embedding <=> query_embedding) as similarity
   from documents
-  where 1 - (documents.embedding <=> query_embedding) > match_threshold
-  and documents.metadata @> filter
+  where documents.metadata @> filter
+  and 1 - (documents.embedding <=> query_embedding) > match_threshold
   order by documents.embedding <=> query_embedding
   limit match_count;
 end;
 $$;
 
--- 5. Disable RLS (To allow Python backend full access)
-alter table documents disable row level security;
-alter table profiles disable row level security;
-
 ```
 
----
-
-## 🏃‍♂️ Usage Guide
-
-### Starting the Server
+### **Step 4: Run the App**
 
 ```bash
 python app.py
 
 ```
 
-Access the app at `http://127.0.0.1:5000`.
-
-### Roles & Login
-
-1. **Student:**
-* Click "Sign Up".
-* Role defaults to Student.
-* Log in to access the study portal.
-
-
-2. **Teacher (Admin):**
-* Click "Teacher" on the Sign In/Sign Up page.
-* Enter the **Teacher Access Code** (Default: `TEACHER_SECURE_2026`).
-* *Note: You can change this code in `app.py` line 34.*
-
-
-
-### Uploading Syllabus
-
-1. Log in as **Teacher**.
-2. Enter **Subject Name** (e.g., "Data Structures") and **Unit** (e.g., "Unit 1").
-3. Upload the PDF.
-
-### Chatting
-
-1. Log in as **Student**.
-2. Select the **Subject** and **Unit** from the sidebar.
-3. Ask a question! The AI will answer based on the uploaded file.
+* **Student Login:** Sign up with any email.
+* **Teacher Login:** Sign up using the secure code: **`TEACHER_SECURE_2026`**.
 
 ---
 
-## 📂 Project Structure
+## 6. Future Scope
 
-```
-EduGraph/
-├── app.py                  # Main Flask backend & RAG logic
-├── requirements.txt        # Python dependencies
-├── .env                    # API keys (Not on GitHub)
-├── templates/
-│   ├── index.html          # Main Dashboard (Student & Teacher views)
-│   └── login.html          # Authentication & Role Selection
-└── temp_uploads/           # Temporary storage for processing PDFs
+* **"Content Gap" Alerts:** Automatically notify teachers when a student asks a question the database cannot answer.
+* **Multi-Modal RAG:** Support for searching images and diagrams within PDFs.
+* **LMS Integration:** Direct plugin for Moodle or Canvas.
 
-```
+---
 
-## 🤝 Contributing
-
-Feel free to fork this repository and submit pull requests. For major changes, please open an issue first.
-
-## 📜 License
-
-This project is open-source and available under the MIT License.
-
-```
-
-```
+**Built with ❤️ for the Hackathon 2026.**
