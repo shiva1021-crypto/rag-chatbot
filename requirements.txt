@@ -10,3 +10,5 @@ fastembed
 pypdf==6.5.0
 httpx==0.28.1
 langsmith
+flask-socketio
+eventlet

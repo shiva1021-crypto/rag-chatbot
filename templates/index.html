@@ -113,6 +113,17 @@
     <div class="main">
         
         <div id="viewDashboard" class="dashboard-container hidden">
+            <div class="metric-card full-width" style="border-left: 5px solid #d93025;">
+                <div class="metric-title" style="color: #d93025; font-weight: bold;">
+                    <i class="fas fa-exclamation-triangle"></i> Content Gaps (Low Confidence Queries)
+                </div>
+                <div style="font-size: 0.9rem; color: #555; margin-top: 10px;">
+                    The AI struggled to answer these recent questions. Consider uploading more material on these topics.
+                </div>
+                <ul id="missedQueriesList" class="activity-list" style="margin-top: 10px;">
+                    <li>Loading alerts...</li>
+                </ul>
+            </div>
             <div class="metric-card">
                 <div class="metric-title">Total Questions Asked</div>
                 <div class="metric-value" id="statQueries">0</div>
@@ -346,33 +357,70 @@
         //  DASHBOARD ANALYTICS
         // ==========================================
 
-        async function loadDashboardData() {
-            try {
-                const res = await fetch('/dashboard_stats');
-                const data = await res.json();
-                
-                document.getElementById('statQueries').innerText = data.total_queries || 0;
-                document.getElementById('statStudents').innerText = data.active_students || 0;
-                
-                const subjects = data.subject_distribution || {};
-                const topSubj = Object.keys(subjects).reduce((a, b) => subjects[a] > subjects[b] ? a : b, "-");
-                document.getElementById('statTopSubject').innerText = topSubj;
+    async function loadDashboardData() {
+    try {
+        // ==========================================
+        // 1. Fetch General Stats & Recent Activity
+        // ==========================================
+        const res = await fetch('/dashboard_stats');
+        const data = await res.json();
+        
+        // Update Top Stats Cards
+        document.getElementById('statQueries').innerText = data.total_queries || 0;
+        document.getElementById('statStudents').innerText = data.active_students || 0;
+        
+        // Calculate and Update Top Subject
+        const subjects = data.subject_distribution || {};
+        const topSubj = Object.keys(subjects).reduce((a, b) => subjects[a] > subjects[b] ? a : b, "-");
+        document.getElementById('statTopSubject').innerText = topSubj;
 
-                renderSubjectChart(subjects);
-                renderTrendChart(data.activity_trend || {labels:[], data:[]});
+        // Render Charts
+        renderSubjectChart(subjects);
+        renderTrendChart(data.activity_trend || {labels:[], data:[]});
 
-                const list = document.getElementById('recentQueriesList');
-                list.innerHTML = "";
-                if(data.recent_queries && data.recent_queries.length > 0) {
-                    data.recent_queries.forEach(q => {
-                        list.innerHTML += `<li class="activity-item"><i class="fas fa-comment-dots"></i> "${q}"</li>`;
-                    });
-                } else {
-                    list.innerHTML = `<li class="activity-item">No recent activity.</li>`;
-                }
-            } catch(e) { console.error("Dashboard error", e); }
+        // Render Recent Queries List
+        const list = document.getElementById('recentQueriesList');
+        list.innerHTML = "";
+        if(data.recent_queries && data.recent_queries.length > 0) {
+            data.recent_queries.forEach(q => {
+                list.innerHTML += `<li class="activity-item"><i class="fas fa-comment-dots"></i> "${q}"</li>`;
+            });
+        } else {
+            list.innerHTML = `<li class="activity-item">No recent activity.</li>`;
         }
 
+        // ==========================================
+        // 2. NEW: Fetch Missed Queries (Content Gaps)
+        // ==========================================
+        const resMissed = await fetch('/get_missed_queries');
+        const missedData = await resMissed.json();
+        
+        const alertList = document.getElementById('missedQueriesList');
+        alertList.innerHTML = "";
+        
+        if (missedData.length === 0) {
+            alertList.innerHTML = '<li style="color:green"><i class="fas fa-check-circle"></i> No content gaps detected!</li>';
+        } else {
+            missedData.forEach(item => {
+                // Format score as percentage (e.g., 0.46 -> 46%)
+                const conf = Math.round(item.score * 100);
+                alertList.innerHTML += `
+                <li class="activity-item" style="justify-content: space-between;">
+                    <span>
+                        <strong style="color:#d93025">"${item.query}"</strong> 
+                        <span style="font-size:0.8em; color:#666">in ${item.subject}</span>
+                    </span>
+                    <span style="font-size:0.8em; background:#fce8e6; color:#c5221f; padding:2px 8px; border-radius:10px;">
+                        ${conf}% Confidence
+                    </span>
+                </li>`;
+            });
+        }
+
+    } catch(e) { 
+        console.error("Dashboard error", e); 
+    }
+}
         function renderSubjectChart(dataObj) {
             const ctx = document.getElementById('subjectChart').getContext('2d');
             if(subjectChartRef) subjectChartRef.destroy();
