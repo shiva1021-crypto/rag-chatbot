@@ -10,76 +10,174 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <style>
-        :root { --primary: #0b57d0; --bg: #f8f9fa; --sidebar: #ffffff; --card-bg: #ffffff; }
+        :root {
+            --primary: #0b57d0;
+            --primary-light: #4a8cff;
+            --primary-dark: #053b94;
+            --bg: #f8f9fa;
+            --bg-dark: #0d1117;
+            --sidebar: #ffffff;
+            --sidebar-dark: #161b22;
+            --card-bg: #ffffff;
+            --card-bg-dark: #1c2128;
+            --text: #1f1f1f;
+            --text-light: #666666;
+            --text-dark: #e0e0e0;
+            --border: #e0e0e0;
+            --border-dark: #30363d;
+            --success: #1e8e3e;
+            --error: #d93025;
+            --warning: #f57c00;
+        }
+
+        body.dark-mode {
+            --bg: var(--bg-dark);
+            --sidebar: var(--sidebar-dark);
+            --card-bg: var(--card-bg-dark);
+            --text: var(--text-dark);
+            --text-light: #a0a0a0;
+            --border: var(--border-dark);
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { display: flex; height: 100vh; background: var(--bg); overflow: hidden; }
+        body { display: flex; height: 100vh; background: var(--bg); overflow: hidden; color: var(--text); transition: background-color 0.3s ease, color 0.3s ease; }
 
         /* --- Layout --- */
-        .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; padding: 25px; z-index: 2; }
-        .main { flex: 1; display: flex; flex-direction: column; position: relative; overflow-y: auto; }
+        .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; z-index: 2; overflow-y: auto; transition: all 0.3s ease; }
+        .main { flex: 1; display: flex; flex-direction: column; position: relative; overflow-y: auto; background: var(--bg); transition: background-color 0.3s ease; }
         
-        .nav-btn {
-            width: 100%; padding: 12px; margin-bottom: 8px; text-align: left;
-            background: none; border: none; border-radius: 8px; color: #555;
-            font-weight: 500; cursor: pointer; transition: 0.2s;
+        .theme-toggle {
+            width: 100%; padding: 10px 14px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text);
+            border-radius: 10px; cursor: pointer; margin-bottom: 20px; font-weight: 600;
+            transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .nav-btn:hover { background: #f0f4f9; color: var(--primary); }
-        .nav-btn.active { background: #e8f0fe; color: var(--primary); font-weight: 600; }
+        .theme-toggle:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .nav-btn {
+            width: 100%; padding: 12px 16px; margin-bottom: 8px; text-align: left;
+            background: none; border: none; border-radius: 10px; color: var(--text-light);
+            font-weight: 500; cursor: pointer; transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        .nav-btn:hover { background: var(--primary); color: white; transform: translateX(4px); }
+        .nav-btn.active { background: var(--primary); color: white; font-weight: 600; border-left-color: transparent; }
         .nav-btn i { margin-right: 10px; width: 20px; text-align: center; }
 
         /* --- Dashboard Grid --- */
-        .dashboard-container { padding: 30px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .dashboard-container { padding: 30px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; animation: fadeIn 0.5s ease-out; }
         
         /* Metric Cards */
-        .metric-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .metric-title { font-size: 0.85rem; color: #666; font-weight: 500; margin-bottom: 10px; }
-        .metric-value { font-size: 1.8rem; font-weight: 600; color: #333; }
+        .metric-card { background: var(--card-bg); padding: 24px; border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.3s ease; cursor: default; }
+        .metric-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(11, 87, 208, 0.12); }
+        .metric-title { font-size: 0.8rem; color: var(--text-light); font-weight: 500; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.6px; }
+        .metric-value { font-size: 2.2rem; font-weight: 700; color: var(--primary); background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         
         /* Chart Cards */
-        .chart-card { background: var(--card-bg); padding: 25px; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 4px 15px rgba(0,0,0,0.03); grid-column: span 2; }
+        .chart-card { background: var(--card-bg); padding: 28px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); grid-column: span 2; transition: all 0.3s ease; }
+        .chart-card:hover { box-shadow: 0 8px 24px rgba(11, 87, 208, 0.12); }
+        .chart-card h3 { margin-bottom: 20px; color: var(--text); display: flex; align-items: center; gap: 10px; font-size: 1.1rem; font-weight: 600; }
         .full-width { grid-column: span 4; }
 
         /* Recent Activity List */
         .activity-list { list-style: none; }
-        .activity-item { padding: 12px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; color: #444; display: flex; align-items: center; gap: 10px; }
-        .activity-item i { color: #ccc; }
+        .activity-item { padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; color: var(--text-light); display: flex; align-items: center; gap: 12px; transition: all 0.2s ease; }
+        .activity-item:hover { padding-left: 6px; color: var(--primary); }
+        .activity-item i { color: var(--border); transition: all 0.2s ease; }
+        .activity-item:hover i { color: var(--primary); }
 
         /* --- Standard Components (Inputs, etc) --- */
-        select, input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px; }
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; cursor: pointer; }
-        .btn-primary:hover { background: #0842a0; }
+        select, input[type="text"] {
+            width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 10px; margin-bottom: 12px;
+            transition: all 0.3s ease; font-size: 0.95rem; background: var(--card-bg); color: var(--text);
+        }
+        select:focus, input[type="text"]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(11, 87, 208, 0.1); outline: none; }
+        label { font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 6px; display: block; }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white; border: none; padding: 12px 18px; width: 100%; border-radius: 10px;
+            cursor: pointer; transition: all 0.3s ease; font-weight: 600; font-size: 0.95rem;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(11, 87, 208, 0.3); }
+        .btn-primary:active { transform: translateY(0); }
         
         /* --- Student Chat --- */
-        .chat-area { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; }
-        .message { padding: 15px 20px; border-radius: 12px; max-width: 80%; line-height: 1.5; }
-        .user-msg { background: #e8f0fe; align-self: flex-end; }
-        .bot-msg { background: white; border: 1px solid #eee; align-self: flex-start; }
-        .input-area { padding: 20px; background: white; border-top: 1px solid #ddd; display: flex; gap: 10px; }
-        textarea { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #ccc; resize: none; height: 50px; }
+        .chat-area { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; animation: fadeIn 0.5s ease-out; }
+        .message { padding: 16px 20px; border-radius: 18px; max-width: 75%; line-height: 1.6; animation: slideUp 0.3s ease-out; word-wrap: break-word; }
+        .user-msg { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; align-self: flex-end; border-radius: 20px 4px 20px 20px; }
+        .bot-msg { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); align-self: flex-start; border-radius: 4px 20px 20px 20px; }
+        .input-area { padding: 20px 30px; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; gap: 12px; }
+        textarea { flex: 1; padding: 14px 18px; border-radius: 24px; border: 2px solid var(--border); resize: none; height: 50px; transition: all 0.3s ease; font-family: 'Inter', sans-serif; background: var(--card-bg); color: var(--text); }
+        textarea::placeholder { color: var(--text-light); }
+        textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(11, 87, 208, 0.1); outline: none; }
 
         .hidden { display: none !important; }
 
-        /* --- NEW: Quiz Modal Styles --- */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 600px; border-radius: 12px; max-height: 80vh; overflow-y: auto; }
-        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .close:hover { color: black; }
+        /* --- Quiz Modal Styles --- */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); animation: fadeIn 0.3s ease-out; }
+        .modal-content { background-color: var(--card-bg); margin: 5% auto; padding: 32px; border: 1px solid var(--border); width: 90%; max-width: 700px; border-radius: 18px; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.3s ease-out; color: var(--text); }
+        .close { color: var(--text-light); float: right; font-size: 32px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .close:hover { color: var(--primary); transform: scale(1.2); }
 
-        .quiz-option { display: block; width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; background: white; text-align: left; cursor: pointer; transition: 0.2s; }
-        .quiz-option:hover { background: #f0f4f9; }
-        .quiz-option.correct { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .quiz-option { display: block; width: 100%; padding: 14px 18px; margin: 12px 0; border: 2px solid var(--border); border-radius: 12px; background: var(--card-bg); color: var(--text); text-align: left; cursor: pointer; transition: all 0.3s ease; font-weight: 500; }
+        .quiz-option:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); transform: translateX(4px); }
+        .quiz-option:disabled { cursor: not-allowed; }
+        .quiz-option.correct { background: #d4edda; border-color: #28a745; color: #155724; }
         .quiz-option.wrong { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
 
-        /* The Purple Quiz Button */
-        .btn-quiz { background: #673ab7; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; margin-top: 15px; font-weight: 500; cursor: pointer; }
-        .btn-quiz:hover { background: #5e35b1; }
-        .btn-quiz:disabled { background: #ccc; cursor: not-allowed; }
+        /* Modern Quiz Button - ChatGPT style */
+        .btn-quiz { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; border: none; padding: 12px 18px; width: 100%; border-radius: 12px; margin-top: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; }
+        .btn-quiz:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(11, 87, 208, 0.3); }
+        .btn-quiz:disabled { background: var(--border); cursor: not-allowed; opacity: 0.6; }
+
+        /* Library Item Styling */
+        .library-item { padding: 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; transition: all 0.2s ease; border-radius: 10px; }
+        .library-item:hover { background: var(--primary); transform: translateX(4px); color: white; }
+        .library-item strong { color: var(--primary); }
+        .library-item:hover strong { color: white; }
+        .lib-actions { display: flex; gap: 8px; }
+        .lib-btn { background: none; border: none; cursor: pointer; padding: 8px 12px; border-radius: 8px; transition: all 0.2s ease; color: var(--text-light); }
+        .lib-btn:hover { background: rgba(11, 87, 208, 0.1); color: var(--primary); }
+        .lib-btn.delete:hover { color: var(--error); background: rgba(217, 48, 37, 0.1); }
+
+        /* Upload Status */
+        #uploadStatus { margin-top: 16px; padding: 14px 16px; background: var(--card-bg); border-left: 4px solid var(--primary); border-radius: 10px; display: none; animation: slideDown 0.3s ease-out; color: var(--text); }
+
+        /* Project Stats Section */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-box { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); text-align: center; transition: all 0.3s ease; }
+        .stat-box:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(11, 87, 208, 0.12); }
+        .stat-number { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 0.8rem; color: var(--text-light); margin-top: 6px; font-weight: 500; }
+
+        /* Quick Actions */
+        .quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .quick-btn { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .quick-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(11, 87, 208, 0.3); }
+        .quick-btn i { font-size: 1.2rem; }
+
+        /* Learning Progress Card */
+        .progress-card { background: var(--card-bg); padding: 20px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .progress-item { margin-bottom: 16px; }
+        .progress-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; }
+        .progress-bar { width: 100%; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%); transition: width 0.3s ease; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <h2 style="margin-bottom: 30px; color:#333;"><i class="fas fa-graduation-cap"></i> EduGraph</h2>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <h2 style="color: var(--text); margin: 0; font-size: 1.3rem;"><i class="fas fa-graduation-cap"></i> EduGraph</h2>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
         
         <div id="teacherNav" class="hidden">
             <button class="nav-btn active" onclick="switchView('dashboard')" id="navDash">
@@ -187,16 +285,74 @@
         </div>
 
         <div id="viewStudent" class="hidden" style="display: flex; flex-direction: column; height: 100%;">
-            <div class="chat-area" id="chatBox">
-                <div style="text-align: center; margin-top: 50px; color: #aaa;">
-                    <h1><i class="fas fa-robot"></i> AI Tutor</h1>
-                    <p>Select a Subject and Unit to start.</p>
+            <div style="flex: 1; overflow-y: auto; padding: 30px;">
+                <div id="projectStatsSection" class="hidden">
+                    <h1 style="margin-bottom: 25px; color: var(--text); display: flex; align-items: center; gap: 10px;"><i class="fas fa-dashboard"></i> Learning Dashboard</h1>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-number" id="stat-questions">0</div>
+                            <div class="stat-label">Questions Asked</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number" id="stat-sessions">0</div>
+                            <div class="stat-label">Study Sessions</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number" id="stat-quizzes">0</div>
+                            <div class="stat-label">Quizzes Taken</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number" id="stat-score">0%</div>
+                            <div class="stat-label">Avg. Score</div>
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <button class="quick-btn" onclick="scrollToChatArea()">
+                            <i class="fas fa-comments"></i> New Chat
+                        </button>
+                        <button class="quick-btn" onclick="document.getElementById('s_subject').focus()">
+                            <i class="fas fa-book"></i> Change Topic
+                        </button>
+                        <button class="quick-btn" onclick="generateQuiz()">
+                            <i class="fas fa-brain"></i> Quick Quiz
+                        </button>
+                        <button class="quick-btn" onclick="toggleTheme()">
+                            <i class="fas fa-adjust"></i> Theme
+                        </button>
+                    </div>
+
+                    <div class="progress-card">
+                        <h3 style="margin-bottom: 20px; color: var(--text);">Learning Progress</h3>
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>Overall Progress</span>
+                                <span id="progress-percent">45%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-fill" style="width: 45%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="chatSection">
+                    <div class="chat-area" id="chatBox">
+                        <div style="text-align: center; margin-top: 60px; color: var(--text-light);">
+                            <i class="fas fa-robot" style="font-size: 3.5rem; margin-bottom: 20px; opacity: 0.3;"></i>
+                            <h1 style="color: var(--text); margin-bottom: 10px;">AI Tutor Assistant</h1>
+                            <p>Select a Subject and Unit from the sidebar to get started.</p>
+                            <p style="margin-top: 15px; font-size: 0.9rem;">💡 Tip: Ask questions, request explanations, or explore concepts</p>
+                        </div>
+                    </div>
                 </div>
             </div>
+
             <div class="input-area">
-                <textarea id="userQuery" placeholder="Ask a question..." disabled></textarea>
-                <button class="btn-primary" onclick="sendChat()" id="sendBtn" disabled style="width: auto; padding: 0 25px; border-radius: 20px;">
-                    <i class="fas fa-paper-plane"></i>
+                <textarea id="userQuery" placeholder="Ask anything about the topic..." disabled style="font-size: 0.95rem;"></textarea>
+                <button class="btn-primary" onclick="sendChat()" id="sendBtn" disabled style="width: auto; padding: 12px 28px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i class="fas fa-paper-plane"></i> <span>Send</span>
                 </button>
             </div>
         </div>
@@ -222,8 +378,38 @@
         let subjectChartRef = null;
         let trendChartRef = null;
 
+        function toggleTheme() {
+            const isDarkMode = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+            updateThemeToggleIcon();
+        }
+
+        function updateThemeToggleIcon() {
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            const themeBtn = document.querySelector('.theme-toggle i');
+            if (themeBtn) {
+                themeBtn.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
+
+        function initTheme() {
+            const theme = localStorage.getItem('theme-mode') || 'light';
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+            updateThemeToggleIcon();
+        }
+
+        function scrollToChatArea() {
+            const chatArea = document.getElementById('chatBox');
+            if (chatArea) {
+                chatArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
         // --- INITIALIZATION ---
         window.onload = async function() {
+            initTheme();
             const role = localStorage.getItem('user_role');
             if (!role) { window.location.href = '/login'; return; }
 
@@ -238,6 +424,7 @@
                 document.getElementById('viewStudent').classList.remove('hidden');
                 document.getElementById('viewStudent').style.display = 'flex';
                 populateStudentSubjects(); // Fill the dropdowns
+                document.getElementById('projectStatsSection').classList.remove('hidden');
             }
         };
 
